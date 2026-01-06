@@ -141,12 +141,10 @@ class MainWindow(QMainWindow):
         if not files:
             cleanup_temp_folder(temp_folder)
             return
-
         if tool_type == "merge":
             tool = MergePreviewWindow(files, temp_folder)
         else:
             tool = DeletePagesWindow(files[0], temp_folder)
-
         tool.back_to_dashboard.connect(self.return_to_dashboard)
         self.stack.addWidget(tool)
         self.stack.setCurrentWidget(tool)

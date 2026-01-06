@@ -12,7 +12,7 @@ QLabel#InstructionLabel {
 }
 
 QPushButton#SelectButton {
-    background-color: #ADD8E6;
+    background-color: #00dff8;
     color: black;
     font-family: Arial;
     font-size: 14pt;
@@ -23,7 +23,7 @@ QPushButton#SelectButton {
 }
 
 QPushButton#SelectButton:hover {
-    background-color: #9acfe0;
+    background-color: #a1eaf2;
 }
 
 QLabel#Overlay {
@@ -176,13 +176,15 @@ QLineEdit#PagesInput:focus {
 
 QPushButton#BackButton {
     background-color: transparent;
-    color: #ff7b00;
-    font-size: 24px;
+    color: #0eb4ca;
+    font-size: 20px;
     font-weight: bold;
     border: none;
-    padding: 5px;
+    padding-left: 5px;
+    min-width: 120px;
+    min-height: 40px;
 }
 
 QPushButton#BackButton:hover {
-    color: #0056b3;
+    color: white';
 }

@@ -1,18 +1,23 @@
 import sys
-import subprocess
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-    QLabel, QPushButton, QFrame, QGridLayout
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, 
+    QPushButton, QFrame, QGridLayout, QStackedWidget, QMessageBox
 )
 from PyQt6.QtCore import Qt
-from component.toolsForPDF import apply_stylesheet
+from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
+from component.file_picker import get_files
+
+# ייבוא המחלקות של הכלים
+from MergePDF import MergePreviewWindow
+from DeletePages import DeletePagesWindow
 
 class ToolCard(QFrame):
-    def __init__(self, name, description, icon, script_name):
+    def __init__(self, name, description, icon, tool_type, main_window):
         super().__init__()
         self.setObjectName("ToolCard")
         self.setFixedSize(300, 240)
-        self.script_name = script_name
+        self.tool_type = tool_type
+        self.main_window = main_window
         
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -34,7 +39,11 @@ class ToolCard(QFrame):
         self.btn = QPushButton("Start Working")
         self.btn.setObjectName("LaunchButton")
         self.btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn.clicked.connect(self.launch_script)
+        self.btn.clicked.connect(self.launch_tool)
+
+        if not tool_type:
+            self.btn.setEnabled(False)
+            self.btn.setText("Coming Soon")
 
         layout.addWidget(self.icon_label)
         layout.addWidget(self.name_label)
@@ -42,28 +51,22 @@ class ToolCard(QFrame):
         layout.addStretch()
         layout.addWidget(self.btn)
 
-    def launch_script(self):
-        if not self.script_name:
-            return
-        try:
-            subprocess.Popen([sys.executable, self.script_name])
-        except Exception as e:
-            print(f"Critical error: {e}")
+    def launch_tool(self):
+        if self.tool_type == "merge":
+            self.main_window.launch_merge_tool()
+        elif self.tool_type == "delete":
+            self.main_window.launch_delete_tool()
 
-class PDFDashboard(QWidget):
-    def __init__(self):
+class DashboardWidget(QWidget):
+    def __init__(self, main_window):
         super().__init__()
-        self.setWindowTitle("PDF Master Suite")
-        self.setObjectName("DashboardWindow")
-        self.setFixedSize(1000, 700)
-        
-        apply_stylesheet(self, "style_app.qss")
+        self.main_window = main_window
         self._init_ui()
 
     def _init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(40, 30, 40, 40)
-        main_layout.setSpacing(10)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(40, 30, 40, 40)
+        layout.setSpacing(10)
 
         title = QLabel("PDF Solutions")
         title.setObjectName("DashboardTitle")
@@ -73,37 +76,79 @@ class PDFDashboard(QWidget):
         subtitle.setObjectName("DashboardSubtitle")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        main_layout.addWidget(title)
-        main_layout.addWidget(subtitle)
+        layout.addWidget(title)
+        layout.addWidget(subtitle)
 
         grid = QGridLayout()
         grid.setSpacing(25)
 
         tools = [
-            ("Merge PDF", "Merge multiple PDF files into a single document flawlessly.", "📚", "MergePDF.py"),
-            ("Delete Pages", "Delete, reorder or rotate pages in your PDF file.", "✂️", "DeletePages.py"),
-            ("PDF to Text", "Extract text from PDF documents using OCR technology.", "📝", ""),
-            ("Compress PDF", "Reduce the file size of your PDF without losing quality.", "📉", "")
+            ("Merge PDF", "Merge multiple PDF files into a single document flawlessly.", "📚", "merge"),
+            ("Delete Pages", "Delete, reorder or rotate pages in your PDF file.", "✂️", "delete"),
+            ("PDF to Text", "Extract text from PDF documents using OCR technology.", "📝", None),
+            ("Compress PDF", "Reduce the file size of your PDF without losing quality.", "📉", None)
         ]
 
-        for i, (name, desc, icon, script) in enumerate(tools):
-            card = ToolCard(name, desc, icon, script)
-            if not script:
-                card.btn.setEnabled(False)
-                card.btn.setText("Coming Soon")
-            
+        for i, (name, desc, icon, tool_type) in enumerate(tools):
+            card = ToolCard(name, desc, icon, tool_type, self.main_window)
             row, col = i // 2, i % 2
             grid.addWidget(card, row, col)
 
-        main_layout.addLayout(grid)
-        main_layout.addStretch()
+        layout.addLayout(grid)
+        layout.addStretch()
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("PDF Master Suite")
+        self.setObjectName("DashboardWindow")
+        self.setFixedSize(1000, 700)
+        
+        apply_stylesheet(self, "assets/style_app.qss")
+
+        self.stack = QStackedWidget()
+        self.setCentralWidget(self.stack)
+
+        self.dashboard = DashboardWidget(self)
+        self.stack.addWidget(self.dashboard)
+
+    def launch_merge_tool(self):
+        TEMP_FOLDER = "merge_temp_files"
+        files = get_files(max_files=20, target_folder=TEMP_FOLDER)
+        if not files:
+            cleanup_temp_folder(TEMP_FOLDER)
+            return
+
+        tool = MergePreviewWindow(files, TEMP_FOLDER)
+        tool.back_to_dashboard.connect(self.return_to_dashboard)
+        self.stack.addWidget(tool)
+        self.stack.setCurrentWidget(tool)
+
+    def launch_delete_tool(self):
+        TEMP_FOLDER = "page_editor_temp"
+        files = get_files(max_files=1, target_folder=TEMP_FOLDER)
+        if not files:
+            cleanup_temp_folder(TEMP_FOLDER)
+            return
+
+        tool = DeletePagesWindow(files[0], TEMP_FOLDER)
+        tool.back_to_dashboard.connect(self.return_to_dashboard)
+        self.stack.addWidget(tool)
+        self.stack.setCurrentWidget(tool)
+
+    def return_to_dashboard(self):
+        current_widget = self.stack.currentWidget()
+        self.stack.setCurrentWidget(self.dashboard)
+        if current_widget != self.dashboard:
+            self.stack.removeWidget(current_widget)
+            current_widget.deleteLater()
 
 def main():
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)
     
-    window = PDFDashboard()
+    window = MainWindow()
     window.show()
     sys.exit(app.exec())
 

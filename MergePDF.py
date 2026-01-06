@@ -2,40 +2,31 @@ import sys
 import os
 import shutil
 from PyQt6.QtWidgets import (
-    QApplication,
-    QWidget,
-    QPushButton,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QMessageBox,
+    QWidget, QPushButton, QVBoxLayout, QHBoxLayout, 
+    QLabel, QMessageBox, QApplication
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from pypdf import PdfWriter, PdfReader
+
 from component.pdf_grid import PDFGrid
-from component.toolsForPDF import (
-    get_downloads_folder,
-    open_file,
-    apply_stylesheet,
-    cleanup_temp_folder,
-    pick_pdf_files,
-)
-from component.file_picker import get_files
 from component.header_bar import HeaderBar
+from component.toolsForPDF import (
+    get_downloads_folder, open_file, apply_stylesheet, 
+    cleanup_temp_folder, pick_pdf_files
+)
 
 MAX_FILES = 5
 
 class MergePreviewWindow(QWidget):
+    back_to_dashboard = pyqtSignal()
+
     def __init__(self, file_list_paths, temp_folder, max_files=MAX_FILES):
         super().__init__()
         initial_items = [{"path": f, "rotation": 0, "page": 0} for f in file_list_paths]
         self.temp_folder = temp_folder
         self.max_files = max_files
-        self.setWindowTitle("Review Files Before Merge")
-        self.setObjectName("MergePreviewWindow")
-        self.setMinimumSize(900, 600)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        apply_stylesheet(self, "style.qss")
+        apply_stylesheet(self, "assets/style.qss")
         self._init_ui(initial_items)
 
     def _init_ui(self, initial_items):
@@ -85,10 +76,7 @@ class MergePreviewWindow(QWidget):
 
     def go_back(self):
         cleanup_temp_folder(self.temp_folder)
-        from PDF import PDFDashboard
-        self.main_menu = PDFDashboard()
-        self.main_menu.show()
-        self.close()
+        self.back_to_dashboard.emit()
 
     def update_title(self):
         count = len(self.pdf_grid.get_items())
@@ -100,12 +88,9 @@ class MergePreviewWindow(QWidget):
             QMessageBox.warning(self, "Limit Reached", "Maximum files reached.")
             return
         files = pick_pdf_files(self)
-        if not files:
-            return
+        if not files: return
         slots_left = self.max_files - current_count
-        files_to_add = files[:slots_left]
-        count_added = 0
-        for f in files_to_add:
+        for f in files[:slots_left]:
             filename = os.path.basename(f)
             dest_path = os.path.join(self.temp_folder, filename)
             try:
@@ -117,12 +102,8 @@ class MergePreviewWindow(QWidget):
                     dest_path = os.path.join(self.temp_folder, f"{base}_{c}{ext}")
                 shutil.copy2(f, dest_path)
                 self.pdf_grid.add_item({"path": dest_path, "rotation": 0, "page": 0})
-                count_added += 1
-            except Exception:
-                pass
-        if count_added > 0:
-            QMessageBox.information(self, "Added", f"{count_added} files added.")
-
+            except Exception: pass
+        
     def perform_merge(self):
         items = self.pdf_grid.get_items()
         if not items:
@@ -136,8 +117,7 @@ class MergePreviewWindow(QWidget):
             for item in items:
                 reader = PdfReader(item["path"])
                 for page in reader.pages:
-                    if item["rotation"] != 0:
-                        page.rotate(item["rotation"])
+                    if item["rotation"] != 0: page.rotate(item["rotation"])
                     writer.add_page(page)
             output_path = os.path.join(get_downloads_folder(), "merged_result.pdf")
             with open(output_path, "wb") as f:
@@ -151,24 +131,3 @@ class MergePreviewWindow(QWidget):
             QMessageBox.critical(self, "Error", str(e))
         finally:
             cleanup_temp_folder(self.temp_folder)
-
-def main():
-    app = QApplication.instance()
-    if not app:
-        app = QApplication(sys.argv)
-    TEMP_FOLDER = "merge_temp_files"
-    files = get_files(max_files=MAX_FILES, target_folder=TEMP_FOLDER)
-    if not files:
-        cleanup_temp_folder(TEMP_FOLDER)
-        sys.exit()
-    for f in files:
-        if not f.lower().endswith(".pdf"):
-            QMessageBox.critical(None, "Error", "Only PDF files allowed")
-            cleanup_temp_folder(TEMP_FOLDER)
-            sys.exit()
-    window = MergePreviewWindow(files, TEMP_FOLDER, max_files=MAX_FILES)
-    window.show()
-    sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()

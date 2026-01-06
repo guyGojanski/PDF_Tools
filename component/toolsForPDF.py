@@ -57,7 +57,7 @@ def get_pdf_thumbnail(file_path, page_num=0, rotation=0, width=150, height=145):
         return None
 
 
-def apply_stylesheet(widget, filename="style.qss"):
+def apply_stylesheet(widget, filename="assets/style.qss"):
     if os.path.exists(filename):
         try:
             with open(filename, "r", encoding="utf-8") as f:

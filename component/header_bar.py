@@ -1,6 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt, pyqtSignal
 
+
 class HeaderBar(QWidget):
     back_clicked = pyqtSignal()
 
@@ -13,7 +14,7 @@ class HeaderBar(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(20, 0, 20, 0)
 
-        self.back_btn = QPushButton("⬅")
+        self.back_btn = QPushButton("menu")
         self.back_btn.setObjectName("BackButton")
         self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.back_btn.setFixedSize(50, 50)

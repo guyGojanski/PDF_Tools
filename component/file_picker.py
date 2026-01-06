@@ -9,25 +9,27 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QMessageBox,
+    QDialog,  # שינוי 1: ייבוא QDialog
 )
 from PyQt6.QtCore import Qt
+from component.toolsForPDF import get_downloads_folder
 
 
-class FileSelector(QWidget):
+class FileSelector(QDialog):  # שינוי 2: ירושה מ-QDialog במקום QWidget
 
     def __init__(self, max_files: int, target_folder: str = "temp_files"):
         super().__init__()
         self.max_files = max_files
         self.target_folder = target_folder
         self.selected_files = []
-        self.setObjectName("MainWindow")
+        self.setObjectName("MainWindow") # שומרים על השם לעיצוב, למרות שזה דיאלוג
         self._load_stylesheet()
         self.setWindowTitle("File Selector")
         self.setFixedSize(400, 220)
         self.setAcceptDrops(True)
         self._init_ui()
 
-    def _load_stylesheet(self, filename: str = "style.qss"):
+    def _load_stylesheet(self, filename: str = "assets/style.qss"):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         style_path = os.path.abspath(os.path.join(base_dir, "..", filename))
 
@@ -71,7 +73,11 @@ class FileSelector(QWidget):
         self.process_files(files)
 
     def open_files(self):
-        files, _ = QFileDialog.getOpenFileNames(self, "Select Files")
+        initial_dir = get_downloads_folder()
+        files, _ = QFileDialog.getOpenFileNames(
+            self, "Select Files", initial_dir, "PDF Files (*.pdf)"
+        )
+
         if files:
             self.process_files(files)
 
@@ -91,6 +97,9 @@ class FileSelector(QWidget):
 
         copied_paths = []
         for src_path in files:
+            if not src_path.lower().endswith(".pdf"): # בדיקה נוספת לוודא שזה PDF
+                 continue
+                 
             filename = os.path.basename(src_path)
             dest_path = os.path.join(self.target_folder, filename)
             try:
@@ -100,15 +109,19 @@ class FileSelector(QWidget):
                 print(f"Failed to copy {filename}: {e}")
 
         self.selected_files = copied_paths
-        self.close()
+        self.accept() # שינוי 3: סוגר את הדיאלוג בהצלחה (במקום self.close)
 
 
 def get_files(max_files: int, target_folder: str = "temp_uploads") -> list:
+    # אין צורך ליצור QApplication חדש אם אנחנו רצים מתוך PDF.py
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)
 
     window = FileSelector(max_files, target_folder)
-    window.show()
-    app.exec()
+    
+    # שינוי 4: שימוש ב-exec() במקום show() + app.exec()
+    # exec() עוצר את ריצת הקוד בנקודה זו עד שהחלון נסגר, ואז מחזיר את התוצאה
+    window.exec()
+    
     return window.selected_files

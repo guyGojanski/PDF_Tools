@@ -8,7 +8,7 @@ A professional, open-source collection of Python utilities designed to simplify 
 
 - 🗄️ Merge PDF: Effortlessly combine multiple PDF documents into a single, organized file.
 - ✂️ Delete Pages: Remove specific or unwanted pages from any PDF document with precision.
-- 🧮 style.qss: Global stylesheet for the application's visual theme.
+- 🧮 assets/style.qss: Global stylesheet for the application's visual theme.
 - ⚙️ requirements.txt : List of all necessary Python libraries.
 
 ---

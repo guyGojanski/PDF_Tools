@@ -3,23 +3,22 @@ import os
 import fitz
 import re
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, 
-    QLabel, QMessageBox, QLineEdit
+    QWidget, QPushButton, QVBoxLayout, QHBoxLayout, 
+    QLabel, QMessageBox, QLineEdit, QApplication
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from pypdf import PdfWriter, PdfReader
 
 from component.pdf_grid import PDFGrid
 from component.header_bar import HeaderBar
 from component.toolsForPDF import (
-    get_downloads_folder,
-    open_file,
-    apply_stylesheet,
-    cleanup_temp_folder,
+    get_downloads_folder, open_file, apply_stylesheet, 
+    cleanup_temp_folder
 )
-from component.file_picker import get_files
 
 class DeletePagesWindow(QWidget):
+    back_to_dashboard = pyqtSignal()
+
     def __init__(self, file_path, temp_folder):
         super().__init__()
         self.file_path = file_path
@@ -34,12 +33,8 @@ class DeletePagesWindow(QWidget):
             for i in range(self.total_pages)
         ]
 
-        self.setWindowTitle("PDF Page Editor")
-        self.setObjectName("MergePreviewWindow")
-        self.setMinimumSize(1000, 700)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        
-        apply_stylesheet(self, "style.qss")
+        apply_stylesheet(self, "assets/style.qss")
         self._init_ui()
 
     def _init_ui(self):
@@ -73,9 +68,7 @@ class DeletePagesWindow(QWidget):
         layout.addLayout(input_container)
 
         self.pdf_grid = PDFGrid(
-            self.pages_data, 
-            max_items=2000, 
-            on_delete_callback=self.toggle_mark
+            self.pages_data, max_items=2000, on_delete_callback=self.toggle_mark
         )
         layout.addWidget(self.pdf_grid)
 
@@ -91,10 +84,7 @@ class DeletePagesWindow(QWidget):
 
     def go_back(self):
         cleanup_temp_folder(self.temp_folder)
-        from PDF import PDFDashboard
-        self.main_menu = PDFDashboard()
-        self.main_menu.show()
-        self.close()
+        self.back_to_dashboard.emit()
 
     def clean_and_update(self):
         text = self.pages_input.text()
@@ -132,22 +122,19 @@ class DeletePagesWindow(QWidget):
                     card = self.pdf_grid.get_card_by_data(item)
                     if card:
                         card.set_overlay("X", visible=should_be_marked)
-        except Exception:
-            pass
+        except Exception: pass
 
     def clear_all_marks(self):
         for item in self.pages_data:
             if item['marked']:
                 item['marked'] = False
                 card = self.pdf_grid.get_card_by_data(item)
-                if card:
-                    card.set_overlay("", visible=False)
+                if card: card.set_overlay("", visible=False)
 
     def toggle_mark(self, item_data):
         item_data['marked'] = not item_data.get('marked', False)
         card = self.pdf_grid.get_card_by_data(item_data)
-        if card:
-            card.set_overlay("X", visible=item_data['marked'])
+        if card: card.set_overlay("X", visible=item_data['marked'])
 
     def perform_save(self):
         items = self.pdf_grid.get_items()
@@ -179,20 +166,3 @@ class DeletePagesWindow(QWidget):
             QMessageBox.critical(self, "Error", f"Save failed: {str(e)}")
         finally:
             cleanup_temp_folder(self.temp_folder)
-
-def main():
-    app = QApplication.instance()
-    if not app:
-        app = QApplication(sys.argv)
-    TEMP_FOLDER = "page_editor_temp"
-    files = get_files(max_files=1, target_folder=TEMP_FOLDER)
-    if not files:
-        cleanup_temp_folder(TEMP_FOLDER)
-        sys.exit()
-    target_file = files[0]
-    window = DeletePagesWindow(target_file, TEMP_FOLDER)
-    window.show()
-    sys.exit(app.exec())
-
-if __name__ == "__main__":
-    main()

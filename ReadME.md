@@ -31,7 +31,7 @@ A professional, open-source collection of Python utilities designed to simplify 
 
 ### Running the Application
 
-- `python mergePDF.py`
+- `python PDF.py`
 
 ---
 

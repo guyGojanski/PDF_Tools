@@ -2,7 +2,11 @@ import os
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
 from PyQt6.QtGui import QDrag, QPixmap
-from component.toolsForPDF import get_pdf_thumbnail, calculate_rotation
+from component.toolsForPDF import (
+    get_pdf_thumbnail,
+    calculate_rotation,
+    truncate_filename,
+)  # הוספנו ייבוא
 
 
 class FileCard(QFrame):
@@ -35,10 +39,7 @@ class FileCard(QFrame):
         self.image_label.setScaledContents(False)
         self.layout.addWidget(self.image_label)
         file_name = os.path.basename(self.file_path)
-        if len(file_name) > 20:
-            display_name = file_name[:17] + "..."
-        else:
-            display_name = file_name
+        display_name = truncate_filename(file_name)
         self.name_label = QLabel(display_name)
         self.name_label.setObjectName("CardName")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -115,10 +116,7 @@ class FileCard(QFrame):
         self.rotation_angle = item_data.get("rotation", 0)
         self.page_num = item_data.get("page", 0)
         file_name = os.path.basename(self.file_path)
-        if len(file_name) > 20:
-            display_name = file_name[:17] + "..."
-        else:
-            display_name = file_name
+        display_name = truncate_filename(file_name)
         self.name_label.setText(display_name)
         self.name_label.setToolTip(file_name)
         self.generate_thumbnail()

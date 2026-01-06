@@ -58,12 +58,20 @@ def get_pdf_thumbnail(file_path, page_num=0, rotation=0, width=150, height=145):
 
 
 def apply_stylesheet(widget, filename="assets/style.qss"):
-    if os.path.exists(filename):
-        try:
-            with open(filename, "r", encoding="utf-8") as f:
-                widget.setStyleSheet(widget.styleSheet() + f.read())
-        except Exception:
-            pass
+    possible_paths = [
+        filename,
+        os.path.join("..", filename),
+        os.path.join(os.path.dirname(__file__), "..", filename),
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    widget.setStyleSheet(widget.styleSheet() + f.read())
+                return
+            except Exception:
+                pass
+    print(f"Warning: Stylesheet not found: {filename}")
 
 
 def cleanup_temp_folder(folder_path):
@@ -79,3 +87,23 @@ def pick_pdf_files(parent):
         parent, "Select PDF Files", "", "PDF Files (*.pdf)"
     )
     return files
+
+
+def truncate_filename(filename, limit=20):
+    if len(filename) > limit:
+        return filename[: limit - 3] + "..."
+    return filename
+
+
+def safe_copy_file(src_path, target_folder):
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+    filename = os.path.basename(src_path)
+    dest_path = os.path.join(target_folder, filename)
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while os.path.exists(dest_path):
+        dest_path = os.path.join(target_folder, f"{base}_{counter}{ext}")
+        counter += 1
+    shutil.copy2(src_path, dest_path)
+    return dest_path

@@ -1,6 +1,5 @@
 import sys
 import os
-import shutil
 from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
@@ -9,36 +8,24 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QVBoxLayout,
     QMessageBox,
-    QDialog,  # שינוי 1: ייבוא QDialog
+    QDialog,
 )
 from PyQt6.QtCore import Qt
-from component.toolsForPDF import get_downloads_folder
+from component.toolsForPDF import get_downloads_folder, apply_stylesheet, safe_copy_file
 
 
-class FileSelector(QDialog):  # שינוי 2: ירושה מ-QDialog במקום QWidget
+class FileSelector(QDialog):
     def __init__(self, max_files: int, target_folder: str = "temp_files"):
         super().__init__()
         self.max_files = max_files
         self.target_folder = target_folder
         self.selected_files = []
-        self.setObjectName("MainWindow")  # שומרים על השם לעיצוב, למרות שזה דיאלוג
-        self._load_stylesheet()
+        self.setObjectName("MainWindow")
+        apply_stylesheet(self, "assets/style.qss")
         self.setWindowTitle("File Selector")
         self.setFixedSize(400, 220)
         self.setAcceptDrops(True)
         self._init_ui()
-
-    def _load_stylesheet(self, filename: str = "assets/style.qss"):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        style_path = os.path.abspath(os.path.join(base_dir, "..", filename))
-        if os.path.exists(style_path):
-            try:
-                with open(style_path, "r") as f:
-                    self.setStyleSheet(f.read())
-            except Exception as e:
-                print(f"Error loading style: {e}")
-        else:
-            print(f"Style file not found: {style_path}")
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
@@ -84,25 +71,17 @@ class FileSelector(QDialog):  # שינוי 2: ירושה מ-QDialog במקום Q
                 self, "Limit Exceeded", f"Max allowed: {self.max_files} files."
             )
             return
-        if not os.path.exists(self.target_folder):
-            try:
-                os.makedirs(self.target_folder)
-            except OSError as e:
-                QMessageBox.critical(self, "Error", f"Cannot create folder: {e}")
-                return
         copied_paths = []
         for src_path in files:
-            if not src_path.lower().endswith(".pdf"):  # בדיקה נוספת לוודא שזה PDF
+            if not src_path.lower().endswith(".pdf"):
                 continue
-            filename = os.path.basename(src_path)
-            dest_path = os.path.join(self.target_folder, filename)
             try:
-                shutil.copy2(src_path, dest_path)
+                dest_path = safe_copy_file(src_path, self.target_folder)
                 copied_paths.append(os.path.abspath(dest_path))
             except Exception as e:
-                print(f"Failed to copy {filename}: {e}")
+                print(f"Failed to copy {src_path}: {e}")
         self.selected_files = copied_paths
-        self.accept()  # שינוי 3: סוגר את הדיאלוג בהצלחה (במקום self.close)
+        self.accept()
 
 
 def get_files(max_files: int, target_folder: str = "temp_uploads") -> list:

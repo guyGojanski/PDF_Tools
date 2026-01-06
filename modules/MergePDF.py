@@ -1,6 +1,5 @@
 import sys
 import os
-import shutil
 from PyQt6.QtWidgets import (
     QWidget,
     QPushButton,
@@ -21,6 +20,7 @@ from component.toolsForPDF import (
     apply_stylesheet,
     cleanup_temp_folder,
     pick_pdf_files,
+    safe_copy_file,  # הוספנו ייבוא
 )
 
 MAX_FILES = 5
@@ -101,21 +101,14 @@ class MergePreviewWindow(QWidget):
             return
         slots_left = self.max_files - current_count
         for f in files[:slots_left]:
-            filename = os.path.basename(f)
-            dest_path = os.path.join(self.temp_folder, filename)
+
+            # --- שינוי כאן: שימוש בפונקציה המרכזית להעתקה ---
             try:
-                if os.path.exists(dest_path):
-                    base, ext = os.path.splitext(filename)
-                    c = 1
-                    while os.path.exists(
-                        os.path.join(self.temp_folder, f"{base}_{c}{ext}")
-                    ):
-                        c += 1
-                    dest_path = os.path.join(self.temp_folder, f"{base}_{c}{ext}")
-                shutil.copy2(f, dest_path)
+                dest_path = safe_copy_file(f, self.temp_folder)
                 self.pdf_grid.add_item({"path": dest_path, "rotation": 0, "page": 0})
             except Exception:
                 pass
+            # ------------------------------------------------
 
     def perform_merge(self):
         items = self.pdf_grid.get_items()

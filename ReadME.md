@@ -4,21 +4,12 @@ A professional, open-source collection of Python utilities designed to simplify 
 
 ---
 
-## ✨ Key Features
-
-- **🗄️ Merge PDF**: Effortlessly combine multiple PDF documents into a single, organized file.
-- **✂️ Delete Pages**: Remove specific or unwanted pages from any PDF document with precision.
-- **📝 Delete Notes**: Clean your files by stripping out all annotations, comments, and metadata.
-- **🎨 Modern UI**: User-friendly interface with custom icons, responsive design, and dark/light mode compatibility.
-
----
-
 ## 🛠️ Project Structure
 
-- `mergePDF.py` – The main application entry point.
-- `component/` – Contains modular UI components and core logic.
-- `style.qss` – Global stylesheet for the application's visual theme.
-- `requirements.txt` – List of all necessary Python libraries.
+- 🗄️ Merge PDF: Effortlessly combine multiple PDF documents into a single, organized file.
+- ✂️ Delete Pages: Remove specific or unwanted pages from any PDF document with precision.
+- 🧮 style.qss: Global stylesheet for the application's visual theme.
+- ⚙️ requirements.txt : List of all necessary Python libraries.
 
 ---
 

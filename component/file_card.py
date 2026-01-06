@@ -46,6 +46,16 @@ class FileCard(QFrame):
         self.name_label.setFixedHeight(30)
         self.name_label.setToolTip(file_name)
         self.layout.addWidget(self.name_label)
+
+
+        # יצירת שכבת כיסוי (Overlay) שתשמש אותנו במידת הצורך
+        self.overlay_label = QLabel("", self)
+        self.overlay_label.setObjectName("CardOverlay")
+        self.overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        #WA_TransparentForMouseEvents מבטיח שהלייבל לא יפריע ללחיצות עכבר או גרירה
+        self.overlay_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.overlay_label.hide()
+        
         self.delete_btn = QPushButton("X", self)
         self.delete_btn.setObjectName("DeleteButton")
         self.delete_btn.setFixedSize(30, 30)
@@ -71,13 +81,20 @@ class FileCard(QFrame):
         else:
             self.image_label.setText("📄")
 
+    def mousePressEvent(self, event):
+        if not self.overlay_label.isHidden():
+            self.delete_requested.emit(self.item_data)
+        else:
+            super().mousePressEvent(event)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self.number_label.move(5, 5)
+        self.overlay_label.setGeometry(0, 0, self.width(), self.height())
         center_x = self.width() // 2
         center_y = self.height() // 2
         self.delete_btn.move(center_x + 5, center_y - 15)
         self.rotate_btn.move(center_x - 35, center_y - 15)
+        self.number_label.move(5, 5)
 
     def enterEvent(self, event):
         self.delete_btn.show()
@@ -142,3 +159,11 @@ class FileCard(QFrame):
             self.render(pixmap)
             drag.setPixmap(pixmap)
             drag.exec(Qt.DropAction.MoveAction)
+
+    def set_overlay(self, text, visible=True):
+        self.overlay_label.setText(text)
+        if visible:
+            self.overlay_label.show()
+            self.overlay_label.raise_()
+        else:
+            self.overlay_label.hide()

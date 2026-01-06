@@ -1,0 +1,141 @@
+QWidget#MainWindow {
+    background-color: white;
+}
+
+QLabel#InstructionLabel {
+    color: #666666;
+    font-family: Arial;
+    font-size: 10pt;
+    border: 2px dashed #cccccc;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+QPushButton#SelectButton {
+    background-color: #ADD8E6;
+    color: black;
+    font-family: Arial;
+    font-size: 14pt;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+}
+
+QPushButton#SelectButton:hover {
+    background-color: #9acfe0;
+}
+
+QLabel#Overlay {
+    background-color: rgba(30, 30, 30, 200);
+    color: white;
+    font-family: Arial;
+    font-size: 22pt;
+    font-weight: bold;
+}
+
+QWidget#MergePreviewWindow {
+    background-color: white;
+}
+
+QLabel#MergeTitle {
+    color: #333333;
+    font-family: Arial;
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+QScrollArea#MergeScrollArea, QWidget#GridContainer {
+    border: none;
+    background-color: transparent;
+}
+
+QFrame#FileCardFrame {
+    background-color: white;
+    border: 2px solid #555555;
+    border-radius: 5px;
+}
+
+QFrame#FileCardFrame[placeholder="true"] {
+    background-color: white;
+    border: 2px dashed red;
+    border-radius: 8px;
+}
+
+QFrame#FileCardFrame[placeholder="true"] > QLabel {
+    color: transparent;
+}
+
+QLabel#NumberLabel {
+    color: white;
+    background-color: darkred;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+QLabel#CardImage {
+    background-color: white;
+    border: 1px solid #cccccc;
+}
+
+QLabel#CardName {
+    font-size: 12px;
+    font-weight: bold;
+    background: transparent;
+    border: none;
+    color: #333333;
+}
+
+QPushButton#DeleteButton {
+    background-color: rgba(220, 53, 69, 0.95);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 15px;
+    border: 2px solid white;
+}
+QPushButton#DeleteButton:hover {
+    background-color: rgba(255, 0, 0, 1);
+}
+
+QPushButton#RotateButton {
+    background-color: rgba(23, 162, 184, 0.95);
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+    border-radius: 15px;
+    border: 2px solid white;
+    padding-bottom: 3px;
+}
+QPushButton#RotateButton:hover {
+    background-color: rgba(0, 180, 210, 1);
+}
+
+QPushButton#AddButton {
+    background-color: white;
+    color: #dc3545;
+    font-size: 30px;
+    font-weight: bold;
+    border: 2px solid black;
+    border-radius: 20px;
+    padding-bottom: 5px;
+}
+
+QPushButton#AddButton:hover {
+    background-color: #f0f0f0;
+}
+
+QPushButton#MergeButton {
+    background-color: #28a745;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+QPushButton#MergeButton:hover {
+    background-color: #218838;
+}

@@ -17,13 +17,26 @@ from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
 from component.file_picker import get_files
 from modules.MergePDF import MergePreviewWindow
 from modules.DeletePages import DeletePagesWindow
+from assets.config import (
+    MAIN_WINDOW_TITLE,
+    MAIN_WINDOW_WIDTH,
+    MAIN_WINDOW_HEIGHT,
+    STYLESHEET_MAIN,
+    TOOL_CARD_WIDTH,
+    TOOL_CARD_HEIGHT,
+    MERGE_MAX_FILES,
+    MERGE_TEMP_FOLDER,
+    DELETE_MAX_FILES,
+    DELETE_TEMP_FOLDER,
+) 
+    
 
 
 class ToolCard(QFrame):
     def __init__(self, name, description, icon, tool_type, main_window):
         super().__init__()
         self.setObjectName("ToolCard")
-        self.setFixedSize(300, 240)
+        self.setFixedSize(TOOL_CARD_WIDTH, TOOL_CARD_HEIGHT)
         self.tool_type = tool_type
         self.main_window = main_window
         layout = QVBoxLayout(self)
@@ -93,9 +106,9 @@ class DashboardWidget(QWidget):
                 "delete",
             ),
             (
-                "PDF to Text",
-                "Extract text from PDF documents using OCR technology.",
-                "📝",
+                "Split PDF",
+                "Split a PDF into multiple files based on your preferences.",
+                "🧩",
                 None,
             ),
             (
@@ -116,20 +129,24 @@ class DashboardWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("PDF Master Suite")
+        self.setWindowTitle(MAIN_WINDOW_TITLE)
         self.setObjectName("DashboardWindow")
-        self.setFixedSize(1000, 700)
-        apply_stylesheet(self, "assets/style_app.qss")
+        self.setFixedSize(MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT)
+        apply_stylesheet(self, STYLESHEET_MAIN)
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
         self.dashboard = DashboardWidget(self)
         self.stack.addWidget(self.dashboard)
 
     def launch_merge_tool(self) -> None:
-        self._launch_tool_generic("merge", max_files=20, temp_folder="merge_temp_files")
+        self._launch_tool_generic(
+            "merge", max_files=MERGE_MAX_FILES, temp_folder=MERGE_TEMP_FOLDER
+        )
 
     def launch_delete_tool(self) -> None:
-        self._launch_tool_generic("delete", max_files=1, temp_folder="page_editor_temp")
+        self._launch_tool_generic(
+            "delete", max_files=DELETE_MAX_FILES, temp_folder=DELETE_TEMP_FOLDER
+        )
 
     def _launch_tool_generic(
         self, tool_type: str, max_files: int, temp_folder: str

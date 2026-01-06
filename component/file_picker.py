@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from component.toolsForPDF import get_downloads_folder, apply_stylesheet, safe_copy_file
+from assets.config import FILE_PICKER_DEFAULT_FOLDER, STYLESHEET_TOOLS
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class FileSelector(QDialog):
         self.target_folder = target_folder
         self.selected_files: List[str] = []
         self.setObjectName("MainWindow")
-        apply_stylesheet(self, "assets/style.qss")
+        apply_stylesheet(self, STYLESHEET_TOOLS)
         self.setWindowTitle("File Selector")
         self.setFixedSize(400, 220)
         self.setAcceptDrops(True)
@@ -96,7 +97,7 @@ class FileSelector(QDialog):
         self.accept()
 
 
-def get_files(max_files: int, target_folder: str = "temp_uploads") -> List[str]:
+def get_files(max_files: int, target_folder: str = FILE_PICKER_DEFAULT_FOLDER) -> List[str]:
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)

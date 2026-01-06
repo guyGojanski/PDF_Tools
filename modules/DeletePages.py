@@ -24,6 +24,10 @@ from component.toolsForPDF import (
     BaseToolWindow,
     get_unique_filename,
 )
+from assets.config import (
+    PDF_GRID_MAX_ITEMS_DELETE,
+    EDITED_OUTPUT_PREFIX,
+)
 
 
 class DeletePagesWindow(BaseToolWindow):
@@ -71,7 +75,7 @@ class DeletePagesWindow(BaseToolWindow):
         layout.addLayout(input_container)
 
         self.pdf_grid = PDFGrid(
-            self.pages_data, max_items=2000, on_delete_callback=self.toggle_mark
+            self.pages_data, max_items=PDF_GRID_MAX_ITEMS_DELETE, on_delete_callback=self.toggle_mark
         )
         layout.addWidget(self.pdf_grid)
 
@@ -159,7 +163,7 @@ class DeletePagesWindow(BaseToolWindow):
                     if item["rotation"] != 0:
                         page.rotate(item["rotation"])
                     writer.add_page(page)
-                output_name = f"edited_{os.path.basename(self.file_path)}"
+                output_name = f"{EDITED_OUTPUT_PREFIX}{os.path.basename(self.file_path)}"
                 output_path = get_unique_filename(get_downloads_folder(), output_name)
                 with open(output_path, "wb") as f:
                     writer.write(f)

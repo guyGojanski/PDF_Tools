@@ -23,13 +23,17 @@ from component.toolsForPDF import (
     BaseToolWindow,
     get_unique_filename,
 )
-
-MAX_FILES = 5
+from assets.config import (
+    MERGE_MAX_FILES,
+    MERGE_HEADER_TITLE,
+    PDF_GRID_MAX_ITEMS_MERGE,
+    MERGED_OUTPUT_NAME,
+)
 
 
 class MergePreviewWindow(BaseToolWindow):
-    def __init__(self, file_list_paths, temp_folder, max_files=MAX_FILES):
-        super().__init__(temp_folder, "Merge PDF Documents")
+    def __init__(self, file_list_paths, temp_folder, max_files=MERGE_MAX_FILES):
+        super().__init__(temp_folder, MERGE_HEADER_TITLE)
         initial_items = [{"path": f, "rotation": 0, "page": 0} for f in file_list_paths]
         self.max_files = max_files
         self._init_ui(initial_items)
@@ -62,7 +66,7 @@ class MergePreviewWindow(BaseToolWindow):
         header_layout.addWidget(self.add_btn)
         main_layout.addLayout(header_layout)
 
-        self.pdf_grid = PDFGrid(initial_items, max_items=self.max_files)
+        self.pdf_grid = PDFGrid(initial_items, max_items=PDF_GRID_MAX_ITEMS_MERGE)
         self.pdf_grid.items_changed.connect(self.update_title)
         main_layout.addWidget(self.pdf_grid)
 
@@ -118,7 +122,7 @@ class MergePreviewWindow(BaseToolWindow):
                             page.rotate(item["rotation"])
                         writer.add_page(page)
                 output_path = get_unique_filename(
-                    get_downloads_folder(), "merged_result.pdf"
+                    get_downloads_folder(), MERGED_OUTPUT_NAME
                 )
                 with open(output_path, "wb") as f:
                     writer.write(f)

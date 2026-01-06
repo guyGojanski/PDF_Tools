@@ -47,15 +47,14 @@ class FileCard(QFrame):
         self.name_label.setToolTip(file_name)
         self.layout.addWidget(self.name_label)
 
-
         # יצירת שכבת כיסוי (Overlay) שתשמש אותנו במידת הצורך
         self.overlay_label = QLabel("", self)
         self.overlay_label.setObjectName("CardOverlay")
         self.overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        #WA_TransparentForMouseEvents מבטיח שהלייבל לא יפריע ללחיצות עכבר או גרירה
+        # WA_TransparentForMouseEvents מבטיח שהלייבל לא יפריע ללחיצות עכבר או גרירה
         self.overlay_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.overlay_label.hide()
-        
+
         self.delete_btn = QPushButton("X", self)
         self.delete_btn.setObjectName("DeleteButton")
         self.delete_btn.setFixedSize(30, 30)

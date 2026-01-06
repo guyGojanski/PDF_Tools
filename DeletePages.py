@@ -1,15 +1,10 @@
 import sys
 import os
-import shutil
-import fitz  # PyMuPDF
+import fitz
+import re
 from PyQt6.QtWidgets import (
-    QApplication,
-    QWidget,
-    QPushButton,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QMessageBox,
+    QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, 
+    QLabel, QMessageBox, QLineEdit
 )
 from PyQt6.QtCore import Qt
 from pypdf import PdfWriter, PdfReader
@@ -21,7 +16,6 @@ from component.toolsForPDF import (
     apply_stylesheet,
     cleanup_temp_folder,
 )
-# ייבוא רכיב בחירת הקבצים המקורי
 from component.file_picker import get_files
 
 class DeletePagesWindow(QWidget):
@@ -30,15 +24,13 @@ class DeletePagesWindow(QWidget):
         self.file_path = file_path
         self.temp_folder = temp_folder
         
-        # פירוק הקובץ הבודד לעמודים עבור ה-Grid
         doc = fitz.open(file_path)
-        num_pages = len(doc)
+        self.total_pages = len(doc)
         doc.close()
 
-        # יצירת רשימת פריטים שבה כל פריט הוא עמוד מאותו קובץ
         self.pages_data = [
             {'path': file_path, 'page': i, 'rotation': 0, 'marked': False} 
-            for i in range(num_pages)
+            for i in range(self.total_pages)
         ]
 
         self.setWindowTitle("PDF Page Editor")
@@ -51,7 +43,7 @@ class DeletePagesWindow(QWidget):
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(20)
+        layout.setSpacing(15)
 
         header = QHBoxLayout()
         self.title_label = QLabel(f"Editing: {os.path.basename(self.file_path)}")
@@ -61,7 +53,28 @@ class DeletePagesWindow(QWidget):
         header.addStretch()
         layout.addLayout(header)
 
-        # יצירת הגריד עם הגדרה של interactive_delete=True לסימון ב-X
+        input_container = QVBoxLayout()
+        input_container.setContentsMargins(50, 0, 50, 0)
+        input_container.setSpacing(5)
+
+        self.total_pages_label = QLabel(f"Total pages: {self.total_pages}")
+        self.total_pages_label.setObjectName("TotalPagesLabel")
+        input_container.addWidget(self.total_pages_label)
+
+        self.pages_to_remove_label = QLabel("Pages to remove:")
+        self.pages_to_remove_label.setObjectName("RemoveLabel")
+        input_container.addWidget(self.pages_to_remove_label)
+
+        self.pages_input = QLineEdit()
+        self.pages_input.setObjectName("PagesInput")
+        self.pages_input.setPlaceholderText("e.g. 1-3, 5, 8-10")
+        self.pages_input.setMinimumHeight(45)
+        
+        self.pages_input.textChanged.connect(self.clean_and_update)
+        
+        input_container.addWidget(self.pages_input)
+        layout.addLayout(input_container)
+
         self.pdf_grid = PDFGrid(
             self.pages_data, 
             max_items=2000, 
@@ -71,19 +84,72 @@ class DeletePagesWindow(QWidget):
 
         self.save_btn = QPushButton("Save Changes (Remove Marked Pages)")
         self.save_btn.setObjectName("MergeButton")
-        self.save_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.save_btn.setMinimumHeight(60)
         self.save_btn.clicked.connect(self.perform_save)
         layout.addWidget(self.save_btn)
+
+    def clean_and_update(self):
+        text = self.pages_input.text()
+        cleaned_text = re.sub(r'[^0-9,\-]', '', text)
+        
+        if text != cleaned_text:
+            pos = self.pages_input.cursorPosition()
+            self.pages_input.setText(cleaned_text)
+            self.pages_input.setCursorPosition(max(0, pos - 1))
+        
+        self.live_update_marks(cleaned_text.replace(" ", ""))
+
+    def live_update_marks(self, text):
+        if not text:
+            self.clear_all_marks()
+            return
+
+        pages_to_mark = set()
+        parts = text.split(',')
+
+        try:
+            for part in parts:
+                if not part: continue
+                
+                if '-' in part:
+                    if part.endswith('-') or part.startswith('-'): continue
+                    try:
+                        start_str, end_str = part.split('-')
+                        start, end = int(start_str), int(end_str)
+                        if 1 <= start < end <= self.total_pages:
+                            for p in range(start, end + 1):
+                                pages_to_mark.add(p)
+                    except ValueError: continue
+                else:
+                    try:
+                        p = int(part)
+                        if 1 <= p <= self.total_pages:
+                            pages_to_mark.add(p)
+                    except ValueError: continue
+            
+            for item in self.pages_data:
+                should_be_marked = (item['page'] + 1) in pages_to_mark
+                if item['marked'] != should_be_marked:
+                    item['marked'] = should_be_marked
+                    card = self.pdf_grid.get_card_by_data(item)
+                    if card:
+                        card.set_overlay("X", visible=should_be_marked)
+        except Exception:
+            pass
+
+    def clear_all_marks(self):
+        for item in self.pages_data:
+            if item['marked']:
+                item['marked'] = False
+                card = self.pdf_grid.get_card_by_data(item)
+                if card:
+                    card.set_overlay("", visible=False)
 
     def toggle_mark(self, item_data):
         item_data['marked'] = not item_data.get('marked', False)
         card = self.pdf_grid.get_card_by_data(item_data)
         if card:
-            if item_data['marked']:
-                card.set_overlay("X")
-            else:
-                card.set_overlay("", visible=False)
+            card.set_overlay("X", visible=item_data['marked'])
 
     def perform_save(self):
         items = self.pdf_grid.get_items()
@@ -100,26 +166,20 @@ class DeletePagesWindow(QWidget):
         try:
             writer = PdfWriter()
             reader = PdfReader(self.file_path)
-            
             for item in items:
-                if item.get('marked'):
-                    continue
-                
+                if item.get('marked'): continue
                 page = reader.pages[item['page']]
-                if item['rotation'] != 0:
-                    page.rotate(item['rotation'])
+                if item['rotation'] != 0: page.rotate(item['rotation'])
                 writer.add_page(page)
 
             output_name = f"edited_{os.path.basename(self.file_path)}"
             output_path = os.path.join(get_downloads_folder(), output_name)
-            
             with open(output_path, "wb") as f:
                 writer.write(f)
 
-            QMessageBox.information(self, "Success", f"File saved successfully:\n{output_name}")
+            QMessageBox.information(self, "Success", f"File saved successfully!")
             open_file(output_path)
             self.close()
-
         except Exception as e:
             self.save_btn.setText("Save Changes")
             self.save_btn.setEnabled(True)
@@ -133,8 +193,6 @@ def main():
         app = QApplication(sys.argv)
     
     TEMP_FOLDER = "page_editor_temp"
-    
-    # שימוש ב-get_files עם הגבלה לקובץ 1 בלבד
     files = get_files(max_files=1, target_folder=TEMP_FOLDER)
     
     if not files:
@@ -142,13 +200,6 @@ def main():
         sys.exit()
 
     target_file = files[0]
-
-    # בדיקה שהקובץ הוא PDF
-    if not target_file.lower().endswith(".pdf"):
-        QMessageBox.critical(None, "Error", "Only PDF files allowed")
-        cleanup_temp_folder(TEMP_FOLDER)
-        sys.exit()
-
     window = DeletePagesWindow(target_file, TEMP_FOLDER)
     window.show()
     sys.exit(app.exec())

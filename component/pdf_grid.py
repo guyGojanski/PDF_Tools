@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QGridLayout, QScrollArea
-)
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QScrollArea
 from PyQt6.QtCore import Qt, pyqtSignal
 
 from component.file_card import FileCard
 from component.toolsForPDF import calculate_rotation
+
+
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
 
@@ -13,7 +13,7 @@ class PDFGrid(QWidget):
         super().__init__()
         self.items = initial_items if initial_items else []
         self.max_items = max_items
-        self.dragged_item_data = None 
+        self.dragged_item_data = None
         self.on_delete_callback = on_delete_callback
 
         self.setAcceptDrops(True)
@@ -26,10 +26,10 @@ class PDFGrid(QWidget):
         scroll = QScrollArea()
         scroll.setObjectName("MergeScrollArea")
         scroll.setWidgetResizable(True)
-        
+
         self.grid_container = QWidget()
         self.grid_container.setObjectName("GridContainer")
-        
+
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(10, 10, 10, 10)
@@ -72,7 +72,7 @@ class PDFGrid(QWidget):
 
     def update_rotation(self, item_data):
         if item_data in self.items:
-            item_data['rotation'] = calculate_rotation(item_data['rotation'])
+            item_data["rotation"] = calculate_rotation(item_data["rotation"])
 
     def refresh_grid_visuals(self, full_reload=False):
         if full_reload:
@@ -80,19 +80,23 @@ class PDFGrid(QWidget):
                 item = self.grid_layout.takeAt(0)
                 if item.widget():
                     item.widget().deleteLater()
-            
+
             columns = 4
             for i, item_data in enumerate(self.items):
-                card = FileCard(item_data, index=i+1)
-                
+                card = FileCard(item_data, index=i + 1)
+
                 # כאן החיבור החדש לפונקציה המנהלת handle_delete_action
-                card.delete_requested.connect(lambda d=item_data: self.handle_delete_action(d))
-                card.rotate_requested.connect(lambda d=item_data: self.update_rotation(d))
-                
+                card.delete_requested.connect(
+                    lambda d=item_data: self.handle_delete_action(d)
+                )
+                card.rotate_requested.connect(
+                    lambda d=item_data: self.update_rotation(d)
+                )
+
                 row = i // columns
                 col = i % columns
                 self.grid_layout.addWidget(card, row, col)
-        
+
         else:
             widgets = []
             for i in range(self.grid_layout.count()):
@@ -104,7 +108,10 @@ class PDFGrid(QWidget):
                     if isinstance(widget, FileCard):
                         widget.update_content(item_data)
                         widget.set_number(i + 1)
-                        if self.dragged_item_data and item_data == self.dragged_item_data:
+                        if (
+                            self.dragged_item_data
+                            and item_data == self.dragged_item_data
+                        ):
                             widget.set_placeholder(True)
                         else:
                             widget.set_placeholder(False)
@@ -114,7 +121,7 @@ class PDFGrid(QWidget):
             event.accept()
             path = event.mimeData().text()
             for item in self.items:
-                if item['path'] == path:
+                if item["path"] == path:
                     self.dragged_item_data = item
                     break
             self.refresh_grid_visuals(full_reload=False)
@@ -139,7 +146,7 @@ class PDFGrid(QWidget):
                 current_index = self.items.index(self.dragged_item_data)
                 target_item_data = target_card.item_data
                 target_index = self.items.index(target_item_data)
-                
+
                 if current_index != target_index:
                     item = self.items.pop(current_index)
                     self.items.insert(target_index, item)

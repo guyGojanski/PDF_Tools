@@ -147,3 +147,26 @@ QLabel#CardOverlay {
     font-weight: bold;
     border-radius: 5px;
 }
+QLabel#TotalPagesLabel {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333333;
+}
+
+QLabel#RemoveLabel {
+    font-size: 14px;
+    color: #555555;
+}
+
+QLineEdit#PagesInput {
+    border: 1px solid #999999;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 16px;
+    background-color: #f8f9fc;
+}
+
+QLineEdit#PagesInput:focus {
+    border: 2px solid #4a90e2;
+    background-color: #ffffff;
+}

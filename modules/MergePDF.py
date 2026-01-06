@@ -20,7 +20,8 @@ from component.toolsForPDF import (
     apply_stylesheet,
     cleanup_temp_folder,
     pick_pdf_files,
-    safe_copy_file,  # הוספנו ייבוא
+    safe_copy_file,
+    button_operation,
 )
 
 MAX_FILES = 5
@@ -101,40 +102,37 @@ class MergePreviewWindow(QWidget):
             return
         slots_left = self.max_files - current_count
         for f in files[:slots_left]:
-
-            # --- שינוי כאן: שימוש בפונקציה המרכזית להעתקה ---
             try:
                 dest_path = safe_copy_file(f, self.temp_folder)
                 self.pdf_grid.add_item({"path": dest_path, "rotation": 0, "page": 0})
-            except Exception:
-                pass
-            # ------------------------------------------------
+            except OSError as e:
+                QMessageBox.critical(self, "Copy Error", str(e))
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to add file: {str(e)}")
 
     def perform_merge(self):
         items = self.pdf_grid.get_items()
         if not items:
             QMessageBox.warning(self, "No Files", "Please add files.")
             return
-        self.merge_btn.setText("Merging...")
-        self.merge_btn.setEnabled(False)
-        QApplication.processEvents()
-        try:
-            writer = PdfWriter()
-            for item in items:
-                reader = PdfReader(item["path"])
-                for page in reader.pages:
-                    if item["rotation"] != 0:
-                        page.rotate(item["rotation"])
-                    writer.add_page(page)
-            output_path = os.path.join(get_downloads_folder(), "merged_result.pdf")
-            with open(output_path, "wb") as f:
-                writer.write(f)
-            QMessageBox.information(self, "Success", f"Saved at: {output_path}")
-            open_file(output_path)
-            self.go_back()
-        except Exception as e:
-            self.merge_btn.setText("Merge PDF Now")
-            self.merge_btn.setEnabled(True)
-            QMessageBox.critical(self, "Error", str(e))
-        finally:
-            cleanup_temp_folder(self.temp_folder)
+
+        with button_operation(self.merge_btn, "Merging...", "Merge PDF Now"):
+            QApplication.processEvents()
+            try:
+                writer = PdfWriter()
+                for item in items:
+                    reader = PdfReader(item["path"])
+                    for page in reader.pages:
+                        if item["rotation"] != 0:
+                            page.rotate(item["rotation"])
+                        writer.add_page(page)
+                output_path = os.path.join(get_downloads_folder(), "merged_result.pdf")
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                QMessageBox.information(self, "Success", f"Saved at: {output_path}")
+                open_file(output_path)
+                self.go_back()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", str(e))
+            finally:
+                cleanup_temp_folder(self.temp_folder)

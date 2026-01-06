@@ -6,7 +6,7 @@ from component.toolsForPDF import (
     get_pdf_thumbnail,
     calculate_rotation,
     truncate_filename,
-)  # הוספנו ייבוא
+)
 
 
 class FileCard(QFrame):

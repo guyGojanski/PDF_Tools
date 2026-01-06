@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QScrollArea
 from PyQt6.QtCore import Qt, pyqtSignal
-
 from component.file_card import FileCard
 from component.toolsForPDF import calculate_rotation
 
@@ -14,28 +13,22 @@ class PDFGrid(QWidget):
         self.max_items = max_items
         self.dragged_item_data = None
         self.on_delete_callback = on_delete_callback
-
         self.setAcceptDrops(True)
         self._init_ui()
 
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
-
         scroll = QScrollArea()
         scroll.setObjectName("MergeScrollArea")
         scroll.setWidgetResizable(True)
-
         self.grid_container = QWidget()
         self.grid_container.setObjectName("GridContainer")
-
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(10, 10, 10, 10)
-
         scroll.setWidget(self.grid_container)
         main_layout.addWidget(scroll)
-
         self.refresh_grid_visuals(full_reload=True)
 
     def get_items(self):
@@ -78,7 +71,6 @@ class PDFGrid(QWidget):
                 item = self.grid_layout.takeAt(0)
                 if item.widget():
                     item.widget().deleteLater()
-
             columns = 4
             for i, item_data in enumerate(self.items):
                 card = FileCard(item_data, index=i + 1)
@@ -88,16 +80,13 @@ class PDFGrid(QWidget):
                 card.rotate_requested.connect(
                     lambda d=item_data: self.update_rotation(d)
                 )
-
                 row = i // columns
                 col = i % columns
                 self.grid_layout.addWidget(card, row, col)
-
         else:
             widgets = []
             for i in range(self.grid_layout.count()):
                 widgets.append(self.grid_layout.itemAt(i).widget())
-
             for i, widget in enumerate(widgets):
                 if i < len(self.items):
                     item_data = self.items[i]
@@ -128,7 +117,6 @@ class PDFGrid(QWidget):
         event.accept()
         if not self.dragged_item_data:
             return
-
         target_widget = self.childAt(event.position().toPoint())
         target_card = None
         while target_widget:
@@ -136,13 +124,11 @@ class PDFGrid(QWidget):
                 target_card = target_widget
                 break
             target_widget = target_widget.parent()
-
         if target_card:
             try:
                 current_index = self.items.index(self.dragged_item_data)
                 target_item_data = target_card.item_data
                 target_index = self.items.index(target_item_data)
-
                 if current_index != target_index:
                     item = self.items.pop(current_index)
                     self.items.insert(target_index, item)

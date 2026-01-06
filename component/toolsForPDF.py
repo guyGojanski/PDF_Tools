@@ -2,42 +2,58 @@ import os
 import shutil
 import platform
 import subprocess
+import logging
+from contextlib import contextmanager
+from typing import Optional, Tuple, List, Any
 import fitz
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFileDialog
+from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton, QMessageBox
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
-def get_downloads_folder():
+def get_downloads_folder() -> str:
     if os.name == "nt":
         return os.path.join(os.environ["USERPROFILE"], "Downloads")
     return os.path.join(os.path.expanduser("~"), "Downloads")
 
 
-def open_file(path):
-    if platform.system() == "Windows":
-        os.startfile(path)
-    elif platform.system() == "Darwin":
-        subprocess.call(("open", path))
-    else:
-        subprocess.call(("xdg-open", path))
+def open_file(path: str) -> None:
+    try:
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.call(("open", path))
+        else:
+            subprocess.call(("xdg-open", path))
+    except Exception as e:
+        logger.error(f"Failed to open file {path}: {e}")
 
 
-def validate_only_pdfs(file_list):
+def validate_only_pdfs(file_list: List[str]) -> Tuple[bool, Optional[str]]:
     for f in file_list:
         if not f.lower().endswith(".pdf"):
             return False, os.path.basename(f)
     return True, None
 
 
-def calculate_rotation(current_angle):
+def calculate_rotation(current_angle: int) -> int:
     return (current_angle - 90) % 360
 
 
-def get_pdf_thumbnail(file_path, page_num=0, rotation=0, width=150, height=145):
+def get_pdf_thumbnail(
+    file_path: str,
+    page_num: int = 0,
+    rotation: int = 0,
+    width: int = 150,
+    height: int = 145,
+) -> Optional[QPixmap]:
     try:
         doc = fitz.open(file_path)
         if page_num >= len(doc):
+            doc.close()
             return None
         page = doc.load_page(page_num)
         page.set_rotation(rotation)
@@ -53,11 +69,11 @@ def get_pdf_thumbnail(file_path, page_num=0, rotation=0, width=150, height=145):
             Qt.TransformationMode.SmoothTransformation,
         )
     except Exception as e:
-        print(f"Error generating thumbnail: {e}")
+        logger.error(f"Error generating thumbnail for {file_path}: {e}")
         return None
 
 
-def apply_stylesheet(widget, filename="assets/style.qss"):
+def apply_stylesheet(widget: QWidget, filename: str = "assets/style.qss") -> None:
     possible_paths = [
         filename,
         os.path.join("..", filename),
@@ -68,42 +84,70 @@ def apply_stylesheet(widget, filename="assets/style.qss"):
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     widget.setStyleSheet(widget.styleSheet() + f.read())
+                logger.info(f"Stylesheet loaded: {path}")
                 return
-            except Exception:
-                pass
-    print(f"Warning: Stylesheet not found: {filename}")
+            except Exception as e:
+                logger.warning(f"Failed to load stylesheet {path}: {e}")
+                continue
+    error_msg = f"Stylesheet not found: {filename}"
+    logger.error(error_msg)
+    QMessageBox.warning(widget, "Stylesheet Error", error_msg)
 
 
-def cleanup_temp_folder(folder_path):
+def cleanup_temp_folder(folder_path: str) -> None:
     if os.path.exists(folder_path):
         try:
             shutil.rmtree(folder_path)
-        except OSError:
-            pass
+            logger.info(f"Cleaned up temp folder: {folder_path}")
+        except OSError as e:
+            logger.warning(f"Failed to cleanup {folder_path}: {e}")
 
 
-def pick_pdf_files(parent):
+def pick_pdf_files(parent: QWidget) -> List[str]:
     files, _ = QFileDialog.getOpenFileNames(
         parent, "Select PDF Files", "", "PDF Files (*.pdf)"
     )
     return files
 
 
-def truncate_filename(filename, limit=20):
+def truncate_filename(filename: str, limit: int = 20) -> str:
     if len(filename) > limit:
         return filename[: limit - 3] + "..."
     return filename
 
 
-def safe_copy_file(src_path, target_folder):
-    if not os.path.exists(target_folder):
-        os.makedirs(target_folder)
-    filename = os.path.basename(src_path)
-    dest_path = os.path.join(target_folder, filename)
-    base, ext = os.path.splitext(filename)
-    counter = 1
-    while os.path.exists(dest_path):
-        dest_path = os.path.join(target_folder, f"{base}_{counter}{ext}")
-        counter += 1
-    shutil.copy2(src_path, dest_path)
-    return dest_path
+def safe_copy_file(src_path: str, target_folder: str) -> str:
+    try:
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
+            logger.info(f"Created target folder: {target_folder}")
+        filename = os.path.basename(src_path)
+        dest_path = os.path.join(target_folder, filename)
+        base, ext = os.path.splitext(filename)
+        counter = 1
+        while os.path.exists(dest_path):
+            dest_path = os.path.join(target_folder, f"{base}_{counter}{ext}")
+            counter += 1
+        shutil.copy2(src_path, dest_path)
+        logger.info(f"Copied file: {src_path} -> {dest_path}")
+        return dest_path
+    except PermissionError as e:
+        logger.error(f"Permission denied copying {src_path}: {e}")
+        raise OSError(f"Permission denied: {e}")
+    except OSError as e:
+        if "space" in str(e).lower():
+            logger.error(f"Disk full copying {src_path}: {e}")
+            raise OSError(f"Disk full: {e}")
+        logger.error(f"Failed to copy {src_path}: {e}")
+        raise
+
+
+@contextmanager
+def button_operation(button: QPushButton, loading_text: str, original_text: str):
+    button.setText(loading_text)
+    button.setEnabled(False)
+    try:
+        yield
+    finally:
+        button.setText(original_text)
+        button.setEnabled(True)

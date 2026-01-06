@@ -22,6 +22,7 @@ from component.toolsForPDF import (
     open_file,
     apply_stylesheet,
     cleanup_temp_folder,
+    button_operation,
 )
 
 
@@ -156,29 +157,27 @@ class DeletePagesWindow(QWidget):
         if not pages_to_keep:
             QMessageBox.warning(self, "Error", "Cannot delete all pages!")
             return
-        self.save_btn.setText("Saving...")
-        self.save_btn.setEnabled(False)
-        QApplication.processEvents()
-        try:
-            writer = PdfWriter()
-            reader = PdfReader(self.file_path)
-            for item in items:
-                if item.get("marked"):
-                    continue
-                page = reader.pages[item["page"]]
-                if item["rotation"] != 0:
-                    page.rotate(item["rotation"])
-                writer.add_page(page)
-            output_name = f"edited_{os.path.basename(self.file_path)}"
-            output_path = os.path.join(get_downloads_folder(), output_name)
-            with open(output_path, "wb") as f:
-                writer.write(f)
-            QMessageBox.information(self, "Success", f"File saved successfully!")
-            open_file(output_path)
-            self.go_back()
-        except Exception as e:
-            self.save_btn.setText("Save Changes")
-            self.save_btn.setEnabled(True)
-            QMessageBox.critical(self, "Error", f"Save failed: {str(e)}")
-        finally:
-            cleanup_temp_folder(self.temp_folder)
+
+        with button_operation(self.save_btn, "Saving...", "Save Changes"):
+            QApplication.processEvents()
+            try:
+                writer = PdfWriter()
+                reader = PdfReader(self.file_path)
+                for item in items:
+                    if item.get("marked"):
+                        continue
+                    page = reader.pages[item["page"]]
+                    if item["rotation"] != 0:
+                        page.rotate(item["rotation"])
+                    writer.add_page(page)
+                output_name = f"edited_{os.path.basename(self.file_path)}"
+                output_path = os.path.join(get_downloads_folder(), output_name)
+                with open(output_path, "wb") as f:
+                    writer.write(f)
+                QMessageBox.information(self, "Success", f"File saved successfully!")
+                open_file(output_path)
+                self.go_back()
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Save failed: {str(e)}")
+            finally:
+                cleanup_temp_folder(self.temp_folder)

@@ -3,7 +3,6 @@ import os
 import fitz
 import re
 from PyQt6.QtWidgets import (
-    QWidget,
     QPushButton,
     QVBoxLayout,
     QHBoxLayout,
@@ -12,7 +11,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QApplication,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt
 from pypdf import PdfWriter, PdfReader
 
 from component.pdf_grid import PDFGrid
@@ -20,31 +19,25 @@ from component.header_bar import HeaderBar
 from component.toolsForPDF import (
     get_downloads_folder,
     open_file,
-    apply_stylesheet,
     cleanup_temp_folder,
     button_operation,
+    BaseToolWindow,
+    get_unique_filename,
 )
 
 
-class DeletePagesWindow(QWidget):
-    back_to_dashboard = pyqtSignal()
-
+class DeletePagesWindow(BaseToolWindow):
     def __init__(self, file_path, temp_folder):
-        super().__init__()
-        self.file_path = file_path
-        self.temp_folder = temp_folder
-
         doc = fitz.open(file_path)
-        self.total_pages = len(doc)
+        total_pages = len(doc)
         doc.close()
-
+        super().__init__(temp_folder, f"Editing: {os.path.basename(file_path)}")
+        self.file_path = file_path
+        self.total_pages = total_pages
         self.pages_data = [
             {"path": file_path, "page": i, "rotation": 0, "marked": False}
             for i in range(self.total_pages)
         ]
-
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        apply_stylesheet(self, "assets/style.qss")
         self._init_ui()
 
     def _init_ui(self):
@@ -52,7 +45,7 @@ class DeletePagesWindow(QWidget):
         layout.setSpacing(15)
         layout.setContentsMargins(0, 0, 0, 20)
 
-        self.header = HeaderBar(f"Editing: {os.path.basename(self.file_path)}")
+        self.header = HeaderBar(self.header_title)
         self.header.back_clicked.connect(self.go_back)
         layout.addWidget(self.header)
 
@@ -91,10 +84,6 @@ class DeletePagesWindow(QWidget):
         btn_layout.addWidget(self.save_btn)
         self.save_btn.clicked.connect(self.perform_save)
         layout.addLayout(btn_layout)
-
-    def go_back(self):
-        cleanup_temp_folder(self.temp_folder)
-        self.back_to_dashboard.emit()
 
     def clean_and_update(self):
         text = self.pages_input.text()
@@ -171,7 +160,7 @@ class DeletePagesWindow(QWidget):
                         page.rotate(item["rotation"])
                     writer.add_page(page)
                 output_name = f"edited_{os.path.basename(self.file_path)}"
-                output_path = os.path.join(get_downloads_folder(), output_name)
+                output_path = get_unique_filename(get_downloads_folder(), output_name)
                 with open(output_path, "wb") as f:
                     writer.write(f)
                 QMessageBox.information(self, "Success", f"File saved successfully!")

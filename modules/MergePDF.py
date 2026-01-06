@@ -1,7 +1,6 @@
 import sys
 import os
 from PyQt6.QtWidgets import (
-    QWidget,
     QPushButton,
     QVBoxLayout,
     QHBoxLayout,
@@ -9,7 +8,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QApplication,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt
 from pypdf import PdfWriter, PdfReader
 
 from component.pdf_grid import PDFGrid
@@ -17,26 +16,22 @@ from component.header_bar import HeaderBar
 from component.toolsForPDF import (
     get_downloads_folder,
     open_file,
-    apply_stylesheet,
     cleanup_temp_folder,
     pick_pdf_files,
     safe_copy_file,
     button_operation,
+    BaseToolWindow,
+    get_unique_filename,
 )
 
 MAX_FILES = 5
 
 
-class MergePreviewWindow(QWidget):
-    back_to_dashboard = pyqtSignal()
-
+class MergePreviewWindow(BaseToolWindow):
     def __init__(self, file_list_paths, temp_folder, max_files=MAX_FILES):
-        super().__init__()
+        super().__init__(temp_folder, "Merge PDF Documents")
         initial_items = [{"path": f, "rotation": 0, "page": 0} for f in file_list_paths]
-        self.temp_folder = temp_folder
         self.max_files = max_files
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        apply_stylesheet(self, "assets/style.qss")
         self._init_ui(initial_items)
 
     def _init_ui(self, initial_items):
@@ -44,7 +39,7 @@ class MergePreviewWindow(QWidget):
         main_layout.setSpacing(20)
         main_layout.setContentsMargins(0, 0, 0, 20)
 
-        self.header = HeaderBar("Merge PDF Documents")
+        self.header = HeaderBar(self.header_title)
         self.header.back_clicked.connect(self.go_back)
         main_layout.addWidget(self.header)
 
@@ -84,10 +79,6 @@ class MergePreviewWindow(QWidget):
 
         self.update_title()
 
-    def go_back(self):
-        cleanup_temp_folder(self.temp_folder)
-        self.back_to_dashboard.emit()
-
     def update_title(self):
         count = len(self.pdf_grid.get_items())
         self.title_label.setText(f"Selected {count} / {self.max_files} Files")
@@ -126,7 +117,9 @@ class MergePreviewWindow(QWidget):
                         if item["rotation"] != 0:
                             page.rotate(item["rotation"])
                         writer.add_page(page)
-                output_path = os.path.join(get_downloads_folder(), "merged_result.pdf")
+                output_path = get_unique_filename(
+                    get_downloads_folder(), "merged_result.pdf"
+                )
                 with open(output_path, "wb") as f:
                     writer.write(f)
                 QMessageBox.information(self, "Success", f"Saved at: {output_path}")

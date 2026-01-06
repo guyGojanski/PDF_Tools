@@ -1,4 +1,5 @@
 import sys
+from typing import Optional
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -51,7 +52,7 @@ class ToolCard(QFrame):
         layout.addStretch()
         layout.addWidget(self.btn)
 
-    def launch_tool(self):
+    def launch_tool(self) -> None:
         if self.tool_type == "merge":
             self.main_window.launch_merge_tool()
         elif self.tool_type == "delete":
@@ -124,24 +125,28 @@ class MainWindow(QMainWindow):
         self.dashboard = DashboardWidget(self)
         self.stack.addWidget(self.dashboard)
 
-    def launch_merge_tool(self):
-        TEMP_FOLDER = "merge_temp_files"
-        files = get_files(max_files=20, target_folder=TEMP_FOLDER)
-        if not files:
-            cleanup_temp_folder(TEMP_FOLDER)
-            return
-        tool = MergePreviewWindow(files, TEMP_FOLDER)
-        tool.back_to_dashboard.connect(self.return_to_dashboard)
-        self.stack.addWidget(tool)
-        self.stack.setCurrentWidget(tool)
+    def launch_merge_tool(self) -> None:
+        self._launch_tool_generic("merge", max_files=20, temp_folder="merge_temp_files")
 
-    def launch_delete_tool(self):
-        TEMP_FOLDER = "page_editor_temp"
-        files = get_files(max_files=1, target_folder=TEMP_FOLDER)
+    def launch_delete_tool(self) -> None:
+        self._launch_tool_generic("delete", max_files=1, temp_folder="page_editor_temp")
+
+    def _launch_tool_generic(
+        self, tool_type: str, max_files: int, temp_folder: str
+    ) -> None:
+        from modules.MergePDF import MergePreviewWindow
+        from modules.DeletePages import DeletePagesWindow
+
+        files = get_files(max_files=max_files, target_folder=temp_folder)
         if not files:
-            cleanup_temp_folder(TEMP_FOLDER)
+            cleanup_temp_folder(temp_folder)
             return
-        tool = DeletePagesWindow(files[0], TEMP_FOLDER)
+
+        if tool_type == "merge":
+            tool = MergePreviewWindow(files, temp_folder)
+        else:
+            tool = DeletePagesWindow(files[0], temp_folder)
+
         tool.back_to_dashboard.connect(self.return_to_dashboard)
         self.stack.addWidget(tool)
         self.stack.setCurrentWidget(tool)

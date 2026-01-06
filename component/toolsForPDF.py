@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from typing import Optional, Tuple, List, Any
 import fitz
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton, QMessageBox
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -124,10 +124,16 @@ def safe_copy_file(src_path: str, target_folder: str) -> str:
         filename = os.path.basename(src_path)
         dest_path = os.path.join(target_folder, filename)
         base, ext = os.path.splitext(filename)
-        counter = 1
-        while os.path.exists(dest_path):
-            dest_path = os.path.join(target_folder, f"{base}_{counter}{ext}")
-            counter += 1
+
+        if os.path.exists(dest_path):
+            counter = 1
+            while True:
+                candidate = os.path.join(target_folder, f"{base}({counter}){ext}")
+                if not os.path.exists(candidate):
+                    dest_path = candidate
+                    break
+                counter += 1
+
         shutil.copy2(src_path, dest_path)
         logger.info(f"Copied file: {src_path} -> {dest_path}")
         return dest_path
@@ -151,3 +157,36 @@ def button_operation(button: QPushButton, loading_text: str, original_text: str)
     finally:
         button.setText(original_text)
         button.setEnabled(True)
+
+
+def get_unique_filename(folder: str, filename: str) -> str:
+    """Generate a unique filename by appending (counter) if file exists."""
+    dest_path = os.path.join(folder, filename)
+    if not os.path.exists(dest_path):
+        return dest_path
+
+    base, ext = os.path.splitext(filename)
+    counter = 1
+    while True:
+        candidate = os.path.join(folder, f"{base}({counter}){ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        counter += 1
+
+
+class BaseToolWindow(QWidget):
+    """Base class for PDF tool windows with common initialization and navigation."""
+
+    back_to_dashboard = pyqtSignal()
+
+    def __init__(self, temp_folder: str, header_title: str):
+        super().__init__()
+        self.temp_folder = temp_folder
+        self.header_title = header_title
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        apply_stylesheet(self, "assets/style.qss")
+
+    def go_back(self) -> None:
+        """Navigate back to dashboard and cleanup temporary folder."""
+        cleanup_temp_folder(self.temp_folder)
+        self.back_to_dashboard.emit()

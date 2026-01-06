@@ -15,8 +15,8 @@ from PyQt6.QtCore import Qt
 from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
 from component.file_picker import get_files
 
-from MergePDF import MergePreviewWindow
-from DeletePages import DeletePagesWindow
+from modules.MergePDF import MergePreviewWindow
+from modules.DeletePages import DeletePagesWindow
 
 
 class ToolCard(QFrame):

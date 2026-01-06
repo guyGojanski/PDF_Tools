@@ -1,15 +1,23 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, 
-    QPushButton, QFrame, QGridLayout, QStackedWidget, QMessageBox
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QPushButton,
+    QFrame,
+    QGridLayout,
+    QStackedWidget,
+    QMessageBox,
 )
 from PyQt6.QtCore import Qt
 from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
 from component.file_picker import get_files
 
-# ייבוא המחלקות של הכלים
 from MergePDF import MergePreviewWindow
 from DeletePages import DeletePagesWindow
+
 
 class ToolCard(QFrame):
     def __init__(self, name, description, icon, tool_type, main_window):
@@ -18,7 +26,7 @@ class ToolCard(QFrame):
         self.setFixedSize(300, 240)
         self.tool_type = tool_type
         self.main_window = main_window
-        
+
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(12)
@@ -26,7 +34,7 @@ class ToolCard(QFrame):
         self.icon_label = QLabel(icon)
         self.icon_label.setObjectName("ToolIcon")
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         self.name_label = QLabel(name)
         self.name_label.setObjectName("ToolName")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -57,6 +65,7 @@ class ToolCard(QFrame):
         elif self.tool_type == "delete":
             self.main_window.launch_delete_tool()
 
+
 class DashboardWidget(QWidget):
     def __init__(self, main_window):
         super().__init__()
@@ -71,7 +80,7 @@ class DashboardWidget(QWidget):
         title = QLabel("PDF Solutions")
         title.setObjectName("DashboardTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         subtitle = QLabel("Choose the professional tool you need right now")
         subtitle.setObjectName("DashboardSubtitle")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -83,10 +92,30 @@ class DashboardWidget(QWidget):
         grid.setSpacing(25)
 
         tools = [
-            ("Merge PDF", "Merge multiple PDF files into a single document flawlessly.", "📚", "merge"),
-            ("Delete Pages", "Delete, reorder or rotate pages in your PDF file.", "✂️", "delete"),
-            ("PDF to Text", "Extract text from PDF documents using OCR technology.", "📝", None),
-            ("Compress PDF", "Reduce the file size of your PDF without losing quality.", "📉", None)
+            (
+                "Merge PDF",
+                "Merge multiple PDF files into a single document flawlessly.",
+                "📚",
+                "merge",
+            ),
+            (
+                "Delete Pages",
+                "Delete, reorder or rotate pages in your PDF file.",
+                "✂️",
+                "delete",
+            ),
+            (
+                "PDF to Text",
+                "Extract text from PDF documents using OCR technology.",
+                "📝",
+                None,
+            ),
+            (
+                "Compress PDF",
+                "Reduce the file size of your PDF without losing quality.",
+                "📉",
+                None,
+            ),
         ]
 
         for i, (name, desc, icon, tool_type) in enumerate(tools):
@@ -97,13 +126,14 @@ class DashboardWidget(QWidget):
         layout.addLayout(grid)
         layout.addStretch()
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PDF Master Suite")
         self.setObjectName("DashboardWindow")
         self.setFixedSize(1000, 700)
-        
+
         apply_stylesheet(self, "assets/style_app.qss")
 
         self.stack = QStackedWidget()
@@ -143,14 +173,16 @@ class MainWindow(QMainWindow):
             self.stack.removeWidget(current_widget)
             current_widget.deleteLater()
 
+
 def main():
     app = QApplication.instance()
     if not app:
         app = QApplication(sys.argv)
-    
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

@@ -18,7 +18,6 @@ A professional, open-source collection of Python utilities designed to simplify 
 ### Prerequisites
 
 - **Python 3.10+**
-- It is highly recommended to use a **Virtual Environment (venv)** to keep your dependencies isolated.
 
 ### Installation
 

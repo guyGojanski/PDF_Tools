@@ -186,5 +186,5 @@ QPushButton#BackButton {
 }
 
 QPushButton#BackButton:hover {
-    color: white';
+    color: white;
 }

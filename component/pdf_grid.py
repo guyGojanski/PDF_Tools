@@ -8,7 +8,6 @@ from component.toolsForPDF import calculate_rotation
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
 
-    # הוספת on_delete_callback כפרמטר בבנאי
     def __init__(self, initial_items=None, max_items=20, on_delete_callback=None):
         super().__init__()
         self.items = initial_items if initial_items else []
@@ -64,7 +63,6 @@ class PDFGrid(QWidget):
             self.items_changed.emit()
 
     def handle_delete_action(self, item_data):
-        """מנהל את הלוגיקה של המחיקה: האם לקרוא ל-callback או למחוק מיד"""
         if self.on_delete_callback:
             self.on_delete_callback(item_data)
         else:
@@ -84,8 +82,6 @@ class PDFGrid(QWidget):
             columns = 4
             for i, item_data in enumerate(self.items):
                 card = FileCard(item_data, index=i + 1)
-
-                # כאן החיבור החדש לפונקציה המנהלת handle_delete_action
                 card.delete_requested.connect(
                     lambda d=item_data: self.handle_delete_action(d)
                 )

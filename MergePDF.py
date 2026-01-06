@@ -21,9 +21,9 @@ from component.toolsForPDF import (
     pick_pdf_files,
 )
 from component.file_picker import get_files
+from component.header_bar import HeaderBar
 
 MAX_FILES = 5
-
 
 class MergePreviewWindow(QWidget):
     def __init__(self, file_list_paths, temp_folder, max_files=MAX_FILES):
@@ -41,30 +41,54 @@ class MergePreviewWindow(QWidget):
     def _init_ui(self, initial_items):
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(20)
+        main_layout.setContentsMargins(0, 0, 0, 20)
+
+        self.header = HeaderBar("Merge PDF Documents")
+        self.header.back_clicked.connect(self.go_back)
+        main_layout.addWidget(self.header)
+
         header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(20, 0, 20, 0)
+        
         self.title_label = QLabel()
         self.title_label.setObjectName("MergeTitle")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
         self.add_btn = QPushButton("+")
         self.add_btn.setObjectName("AddButton")
         self.add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.add_btn.setFixedSize(40, 40)
         self.add_btn.clicked.connect(self.on_add_clicked)
+        
         header_layout.addStretch()
         header_layout.addWidget(self.title_label)
         header_layout.addStretch()
         header_layout.addWidget(self.add_btn)
         main_layout.addLayout(header_layout)
+
         self.pdf_grid = PDFGrid(initial_items, max_items=self.max_files)
         self.pdf_grid.items_changed.connect(self.update_title)
         main_layout.addWidget(self.pdf_grid)
+
         self.merge_btn = QPushButton("Merge PDF Now")
         self.merge_btn.setObjectName("MergeButton")
         self.merge_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.merge_btn.setMinimumHeight(60)
+        
+        btn_layout = QHBoxLayout()
+        btn_layout.setContentsMargins(50, 0, 50, 0)
+        btn_layout.addWidget(self.merge_btn)
         self.merge_btn.clicked.connect(self.perform_merge)
-        main_layout.addWidget(self.merge_btn)
+        main_layout.addLayout(btn_layout)
+        
         self.update_title()
+
+    def go_back(self):
+        cleanup_temp_folder(self.temp_folder)
+        from PDF import PDFDashboard
+        self.main_menu = PDFDashboard()
+        self.main_menu.show()
+        self.close()
 
     def update_title(self):
         count = len(self.pdf_grid.get_items())
@@ -88,9 +112,7 @@ class MergePreviewWindow(QWidget):
                 if os.path.exists(dest_path):
                     base, ext = os.path.splitext(filename)
                     c = 1
-                    while os.path.exists(
-                        os.path.join(self.temp_folder, f"{base}_{c}{ext}")
-                    ):
+                    while os.path.exists(os.path.join(self.temp_folder, f"{base}_{c}{ext}")):
                         c += 1
                     dest_path = os.path.join(self.temp_folder, f"{base}_{c}{ext}")
                 shutil.copy2(f, dest_path)
@@ -118,18 +140,17 @@ class MergePreviewWindow(QWidget):
                         page.rotate(item["rotation"])
                     writer.add_page(page)
             output_path = os.path.join(get_downloads_folder(), "merged_result.pdf")
-            writer.write(output_path)
-            writer.close()
+            with open(output_path, "wb") as f:
+                writer.write(f)
             QMessageBox.information(self, "Success", f"Saved at: {output_path}")
             open_file(output_path)
+            self.go_back()
         except Exception as e:
             self.merge_btn.setText("Merge PDF Now")
             self.merge_btn.setEnabled(True)
             QMessageBox.critical(self, "Error", str(e))
         finally:
             cleanup_temp_folder(self.temp_folder)
-            self.close()
-
 
 def main():
     app = QApplication.instance()
@@ -148,7 +169,6 @@ def main():
     window = MergePreviewWindow(files, TEMP_FOLDER, max_files=MAX_FILES)
     window.show()
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()

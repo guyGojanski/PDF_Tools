@@ -35,6 +35,8 @@ from component.toolsForPDF import (
     get_unique_filename,
 )
 from assets.config import SPLIT_HEADER_TITLE
+
+
 class RangeGroupWidget(QFrame):
     def __init__(
         self, file_path: str, start_page: int, end_page: int, group_index: int
@@ -63,6 +65,7 @@ class RangeGroupWidget(QFrame):
         pages_label = QLabel(f"Pages: {start_page + 1}-{end_page + 1}")
         pages_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(pages_label)
+
     def _create_thumb(self, file_path: str, page_num: int) -> QLabel:
         lbl = QLabel()
         lbl.setObjectName("PageThumb")
@@ -74,6 +77,8 @@ class RangeGroupWidget(QFrame):
         else:
             lbl.setText(str(page_num + 1))
         return lbl
+
+
 class SplitPDFWindow(BaseToolWindow):
     def __init__(self, file_path: str, temp_folder: str):
         super().__init__(temp_folder, SPLIT_HEADER_TITLE)
@@ -87,6 +92,7 @@ class SplitPDFWindow(BaseToolWindow):
         self.mode_group.button(0).setChecked(True)
         self._set_range_mode(custom=True)
         self.update_preview()
+
     def _init_ui(self) -> None:
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(15)
@@ -145,6 +151,7 @@ class SplitPDFWindow(BaseToolWindow):
         sidebar_layout.addWidget(self.split_btn)
         content_layout.addWidget(self.sidebar)
         main_layout.addLayout(content_layout)
+
     def _create_range_ui(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -186,6 +193,7 @@ class SplitPDFWindow(BaseToolWindow):
         self.range_tabs.addWidget(fixed_widget)
         layout.addWidget(self.range_tabs)
         return widget
+
     def add_range_row(self, start: int = 1, end: int = None) -> None:
         if end is None:
             end = self.total_pages
@@ -216,6 +224,7 @@ class SplitPDFWindow(BaseToolWindow):
         self.custom_rows_layout.addWidget(row_widget)
         self.custom_rows.append((start_spin, end_spin))
         self.update_preview()
+
     def _remove_range_row(self, row_widget: QWidget) -> None:
         if len(self.custom_rows) <= 1:
             return
@@ -226,9 +235,11 @@ class SplitPDFWindow(BaseToolWindow):
         self.custom_rows_layout.removeWidget(row_widget)
         row_widget.deleteLater()
         self.update_preview()
+
     def _sync_range(self, start_spin: QSpinBox, end_spin: QSpinBox) -> None:
         if start_spin.value() > end_spin.value():
             end_spin.setValue(start_spin.value())
+
     def _set_range_mode(self, custom: bool) -> None:
         if custom and not self.custom_rows:
             self.add_range_row()
@@ -236,6 +247,7 @@ class SplitPDFWindow(BaseToolWindow):
         self.rb_custom.setChecked(custom)
         self.rb_fixed.setChecked(not custom)
         self.update_preview()
+
     def _create_pages_ui(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -255,6 +267,7 @@ class SplitPDFWindow(BaseToolWindow):
         layout.addWidget(self.pages_input)
         layout.addStretch()
         return widget
+
     def _create_size_ui(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -281,9 +294,11 @@ class SplitPDFWindow(BaseToolWindow):
         layout.addWidget(QLabel("* Preview uses average page size approximation"))
         layout.addStretch()
         return widget
+
     def change_mode(self, index: int) -> None:
         self.sidebar_stack.setCurrentIndex(index)
         self.update_preview()
+
     def _collect_ranges_range_mode(self) -> List[Tuple[int, int]]:
         if self.rb_fixed.isChecked():
             step = max(1, self.fixed_spin.value())
@@ -297,11 +312,13 @@ class SplitPDFWindow(BaseToolWindow):
             if s <= e:
                 ranges.append((s - 1, e - 1))
         return ranges
+
     def _collect_ranges_pages_mode(self) -> List[Tuple[int, int]]:
         if self.rb_extract_all.isChecked():
             return [(i, i) for i in range(self.total_pages)]
         pages = self._parse_page_list(self.pages_input.text())
         return [(p, p) for p in pages]
+
     def _collect_ranges_size_mode(self) -> List[Tuple[int, int]]:
         target_mb = self.size_spin.value()
         if self.unit_combo.currentText() == "KB":
@@ -312,6 +329,7 @@ class SplitPDFWindow(BaseToolWindow):
             (i, min(i + pages_per_file - 1, self.total_pages - 1))
             for i in range(0, self.total_pages, pages_per_file)
         ]
+
     def update_preview(self) -> None:
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
@@ -336,6 +354,7 @@ class SplitPDFWindow(BaseToolWindow):
             self.split_btn.setText(f"Split into {len(self.ranges_to_split)} Files")
         else:
             self.split_btn.setText("Split PDF")
+
     def _parse_page_list(self, text: str) -> List[int]:
         pages: List[int] = []
         cleaned = re.sub(r"[^0-9,\-]", "", text or "")
@@ -358,6 +377,7 @@ class SplitPDFWindow(BaseToolWindow):
                 except ValueError:
                     continue
         return sorted(list(dict.fromkeys(pages)))
+
     def perform_split(self) -> None:
         if not self.ranges_to_split:
             return
@@ -407,6 +427,7 @@ class SplitPDFWindow(BaseToolWindow):
                 self.go_back()
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
+
     def _split_by_size_greedy(self) -> None:
         target_mb = self.size_spin.value()
         if self.unit_combo.currentText() == "KB":
@@ -457,6 +478,7 @@ class SplitPDFWindow(BaseToolWindow):
                 self.go_back()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Size Split Error: {str(e)}")
+
     def closeEvent(self, event) -> None:
         try:
             if self.doc:

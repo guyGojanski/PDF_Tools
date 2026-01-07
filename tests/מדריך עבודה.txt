@@ -1,0 +1,42 @@
+------------------------------------------------------------------
+Removing a Folder Already Uploaded by Mistake (e.g., DontWant)
+------------------------------------------------------------------
+#Step 1:
+Open your .gitignore file and add the line:      DontWant/
+
+#Step 2:
+Removes the folder from Git tracking only:       git rm -r --cached DontWant
+Commit the removal:                              git commit -m "Remove DontWant folder from cloud but keep locally"
+Update GitHub:                                   git push 
+
+
+------------------------------------------------------------------
+Routine Project Updates (The Standard Upload Process) 
+------------------------------------------------------------------
+#step 0:
+Make sure you are update with the remote repository: git pull
+#Step 1:
+Check for Changes:                           git status
+
+#Step 2:
+To update everything:                        git add .
+To update a specific file:                   git add `filename.py`
+
+#Step 3:
+Commit your changes:                        git commit -m "Describe your changes here"
+
+#Step 4:
+Update GitHub:                              git push 
+
+
+------------------------------------------------------------------
+How to Update Only One Specific File (Ignoring Others)
+------------------------------------------------------------------
+#Step 1:
+Add only that file:                         git add path/to/file.py (Only this file enters the "package").
+
+#Step 2:
+Commit the change:                          git commit -m "updated only this file"
+
+#Step 3:
+Push:                                       git push

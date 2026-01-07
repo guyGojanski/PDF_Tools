@@ -38,41 +38,17 @@ class PasswordInputDialog(QDialog):
     def __init__(self, filename, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Password Required")
+        self.setObjectName("PasswordDialog")
         self.setFixedSize(450, 300)
         self.password = None
-        self.setStyleSheet("""
-            QDialog { background-color: white; border-radius: 10px; }
-            QLabel { font-size: 14px; color: #333; }
-            QLineEdit { 
-                padding: 10px; 
-                border: 1px solid #ccc; 
-                border-radius: 5px;
-                font-size: 14px;
-            }
-            QPushButton#SendButton {
-                background-color: #e74c3c;
-                color: white;
-                border-radius: 5px;
-                padding: 10px;
-                font-weight: bold;
-                font-size: 14px;
-            }
-            QPushButton#SendButton:hover { background-color: #c0392b; }
-            QPushButton#EyeButton {
-                background-color: transparent;
-                border: none;
-                font-size: 16px;
-                color: #555;
-            }
-        """)
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
         layout.setContentsMargins(30, 30, 30, 30)
         title = QLabel("File requires password")
-        title.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title.setObjectName("DialogTitle")
         layout.addWidget(title)
         file_label = QLabel(f"File: {filename}")
-        file_label.setStyleSheet("color: #666; font-style: italic;")
+        file_label.setObjectName("FileLabel")
         file_label.setWordWrap(True)
         layout.addWidget(file_label)
         input_container = QHBoxLayout()

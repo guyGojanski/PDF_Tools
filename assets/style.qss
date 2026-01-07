@@ -268,10 +268,56 @@ QPushButton#SplitActionBtn:disabled {
     background-color: #e2e6ea;
     color: #adb5bd;
 }
-
 QSpinBox, QDoubleSpinBox {
     padding: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
+}
+QDialog#PasswordDialog {
+    background-color: white;
+    border-radius: 10px;
+}
+QDialog#PasswordDialog QLabel {
+    font-size: 14px;
+    color: #333;
+}
+QDialog#PasswordDialog QLabel#DialogTitle {
+    font-size: 18px;
+    font-weight: bold;
+}
+QDialog#PasswordDialog QLabel#FileLabel {
+    color: #666;
+    font-style: italic;
+}
+QDialog#PasswordDialog QLineEdit {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+}
+QPushButton#SendButton {
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 5px;
+    padding: 10px;
+    font-weight: bold;
+    font-size: 14px;
+}
+QPushButton#SendButton:hover {
+    background-color: #c0392b;
+}
+QPushButton#EyeButton {
+    background-color: transparent;
+    border: none;
+    font-size: 16px;
+    color: #555;
+}
+QLabel#SizeInfoLabel {
+    color: #666;
+    margin-bottom: 6px;
+}
+QLabel#EncryptedIcon {
+    font-size: 60px;
+    color: #555;
 }

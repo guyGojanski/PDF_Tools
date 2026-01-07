@@ -262,7 +262,7 @@ class SplitPDFWindow(BaseToolWindow):
         info_label = QLabel(
             f"File Size: {self.file_size_mb:.2f} MB\nTotal Pages: {self.total_pages}"
         )
-        info_label.setStyleSheet("color: #666; margin-bottom: 6px;")
+        info_label.setObjectName("SizeInfoLabel")
         layout.addWidget(info_label)
         layout.addWidget(QLabel("Max size per file:"))
 

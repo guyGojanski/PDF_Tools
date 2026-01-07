@@ -70,7 +70,7 @@ class FileCard(QFrame):
     def update_visuals(self):
         if self.is_encrypted:
             self.image_label.setText("🔒")
-            self.image_label.setStyleSheet("font-size: 60px; color: #555;")
+            self.image_label.setObjectName("EncryptedIcon")
             self.setToolTip("Password required")
             self.rotate_btn.setEnabled(False)
         else:

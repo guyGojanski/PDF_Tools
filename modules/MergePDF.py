@@ -34,6 +34,8 @@ from assets.config import (
     MERGE_HEADER_TITLE,
     MERGED_OUTPUT_NAME,
 )
+
+
 class PasswordInputDialog(QDialog):
     def __init__(self, filename, parent=None):
         super().__init__(parent)
@@ -68,6 +70,7 @@ class PasswordInputDialog(QDialog):
         self.send_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.send_btn.clicked.connect(self.verify)
         layout.addWidget(self.send_btn)
+
     def toggle_visibility(self):
         if self.input_field.echoMode() == QLineEdit.EchoMode.Password:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Normal)
@@ -75,26 +78,27 @@ class PasswordInputDialog(QDialog):
         else:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Password)
             self.eye_btn.setText("👁️")
+
     def verify(self):
         pwd = self.input_field.text().strip()
         if pwd:
             self.password = pwd
             self.accept()
+
+
 class MergePreviewWindow(BaseToolWindow):
     def __init__(self, file_list_paths, temp_folder, max_files=MERGE_MAX_FILES):
         super().__init__(temp_folder, MERGE_HEADER_TITLE)
         initial_items = []
         for f in file_list_paths:
             encrypted = is_pdf_encrypted(f)
-            initial_items.append({
-                "path": f, 
-                "rotation": 0, 
-                "page": 0,
-                "encrypted": encrypted
-            })
-            
+            initial_items.append(
+                {"path": f, "rotation": 0, "page": 0, "encrypted": encrypted}
+            )
+
         self.max_files = max_files
         self._init_ui(initial_items)
+
     def _init_ui(self, initial_items):
         main_layout = QVBoxLayout(self)
         main_layout.setSpacing(20)
@@ -130,9 +134,11 @@ class MergePreviewWindow(BaseToolWindow):
         self.merge_btn.clicked.connect(self.perform_merge)
         main_layout.addLayout(btn_layout)
         self.update_title()
+
     def update_title(self):
         count = len(self.pdf_grid.get_items())
         self.title_label.setText(f"Selected {count} / {self.max_files} Files")
+
     def on_add_clicked(self):
         current_count = len(self.pdf_grid.get_items())
         if current_count >= self.max_files:
@@ -145,7 +151,9 @@ class MergePreviewWindow(BaseToolWindow):
         files_to_process = files[:slots_left]
         if not files_to_process:
             return
-        progress = QProgressDialog("Processing files...", "Cancel", 0, len(files_to_process), self)
+        progress = QProgressDialog(
+            "Processing files...", "Cancel", 0, len(files_to_process), self
+        )
         progress.setWindowTitle("Please Wait")
         progress.setWindowModality(Qt.WindowModality.WindowModal)
         progress.setMinimumDuration(0)
@@ -165,12 +173,14 @@ class MergePreviewWindow(BaseToolWindow):
                     continue
                 dest_path = safe_copy_file(f, self.temp_folder)
                 encrypted = is_pdf_encrypted(dest_path)
-                items_to_add.append({
-                    "path": dest_path, 
-                    "rotation": 0, 
-                    "page": 0,
-                    "encrypted": encrypted
-                })
+                items_to_add.append(
+                    {
+                        "path": dest_path,
+                        "rotation": 0,
+                        "page": 0,
+                        "encrypted": encrypted,
+                    }
+                )
             except Exception as e:
                 print(f"Error preparing file {f}: {e}")
         progress.setValue(len(files_to_process))
@@ -182,6 +192,7 @@ class MergePreviewWindow(BaseToolWindow):
             QMessageBox.warning(self, "Invalid Files Skipped", msg)
         if items_to_add:
             self.pdf_grid.add_items_batch(items_to_add)
+
     def perform_merge(self):
         items = self.pdf_grid.get_items()
         if not items:
@@ -198,34 +209,39 @@ class MergePreviewWindow(BaseToolWindow):
                     result = dialog.exec()
                     if result == QDialog.DialogCode.Accepted:
                         password = dialog.password
-                        decrypted_path = attempt_pdf_decryption(final_path, password, self.temp_folder)
+                        decrypted_path = attempt_pdf_decryption(
+                            final_path, password, self.temp_folder
+                        )
                         if decrypted_path:
                             final_path = decrypted_path
                             decryption_success = True
                             break
                         else:
                             retry = QMessageBox.warning(
-                                self, 
-                                "Incorrect Password", 
-                                f"Failed to unlock:\n{os.path.basename(final_path)}\n\nTry again?", 
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                                self,
+                                "Incorrect Password",
+                                f"Failed to unlock:\n{os.path.basename(final_path)}\n\nTry again?",
+                                QMessageBox.StandardButton.Yes
+                                | QMessageBox.StandardButton.No,
                             )
                             if retry == QMessageBox.StandardButton.No:
                                 break
                     else:
                         break
                 if decryption_success:
-                    files_to_merge.append({
-                        "path": final_path,
-                        "rotation": item["rotation"]
-                    })
+                    files_to_merge.append(
+                        {"path": final_path, "rotation": item["rotation"]}
+                    )
                 else:
-                    QMessageBox.warning(self, "Skipped File", f"Skipping encrypted file:\n{os.path.basename(final_path)}")
+                    QMessageBox.warning(
+                        self,
+                        "Skipped File",
+                        f"Skipping encrypted file:\n{os.path.basename(final_path)}",
+                    )
             else:
-                files_to_merge.append({
-                    "path": final_path,
-                    "rotation": item["rotation"]
-                })
+                files_to_merge.append(
+                    {"path": final_path, "rotation": item["rotation"]}
+                )
         if not files_to_merge:
             QMessageBox.warning(self, "Aborted", "No valid files left to merge.")
             return

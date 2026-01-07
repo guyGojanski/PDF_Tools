@@ -2,6 +2,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QScrollArea
 from PyQt6.QtCore import Qt, pyqtSignal
 from component.file_card import FileCard
 from component.toolsForPDF import calculate_rotation
+
+
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
 
@@ -14,6 +16,7 @@ class PDFGrid(QWidget):
         self.setAcceptDrops(True)
         self.active_cards = {}
         self._init_ui()
+
     def _init_ui(self):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -21,19 +24,8 @@ class PDFGrid(QWidget):
         self.scroll.setObjectName("MergeScrollArea")
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        self.scroll.setStyleSheet(
-            """
-            QScrollArea#MergeScrollArea { background: transparent; border: none; }
-            QScrollBar:vertical { background: transparent; width: 10px; margin: 0px; }
-            QScrollBar::handle:vertical { background-color: #c0c0c0; min-height: 20px; border-radius: 5px; }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-        """
-        )
         self.grid_container = QWidget()
         self.grid_container.setObjectName("GridContainer")
-        self.grid_container.setStyleSheet(
-            "QWidget#GridContainer { background: transparent; }"
-        )
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(20, 20, 20, 20)
@@ -42,14 +34,18 @@ class PDFGrid(QWidget):
         )
         self.scroll.setWidget(self.grid_container)
         main_layout.addWidget(self.scroll)
+
     def showEvent(self, event):
         super().showEvent(event)
         self.refresh_grid_visuals()
+
     def resizeEvent(self, event):
         self.refresh_grid_visuals()
         super().resizeEvent(event)
+
     def get_items(self):
         return self.items
+
     def add_items_batch(self, new_items_list):
         if self.max_items is not None:
             space_left = self.max_items - len(self.items)
@@ -64,6 +60,7 @@ class PDFGrid(QWidget):
         self.refresh_grid_visuals()
         self.items_changed.emit()
         return True
+
     def add_item(self, item_data):
         if self.max_items is not None and len(self.items) >= self.max_items:
             return False
@@ -71,6 +68,7 @@ class PDFGrid(QWidget):
         self.refresh_grid_visuals()
         self.items_changed.emit()
         return True
+
     def remove_item_by_data(self, item_data):
         if item_data in self.items:
             self.items.remove(item_data)
@@ -80,17 +78,20 @@ class PDFGrid(QWidget):
                 card.deleteLater()
             self.refresh_grid_visuals()
             self.items_changed.emit()
+
     def handle_delete_action(self, item_data):
         if self.on_delete_callback:
             self.on_delete_callback(item_data)
         else:
             self.remove_item_by_data(item_data)
+
     def update_rotation(self, item_data):
         if item_data in self.items:
             item_data["rotation"] = calculate_rotation(item_data["rotation"])
             card = self.active_cards.get(id(item_data))
             if card:
                 card.update_content(item_data)
+
     def refresh_grid_visuals(self, full_reload=False):
         available_width = self.scroll.viewport().width()
         if available_width < 400:
@@ -133,8 +134,10 @@ class PDFGrid(QWidget):
                 ids_to_remove.append(item_id)
         for item_id in ids_to_remove:
             del self.active_cards[item_id]
+
     def get_card_by_data(self, item_data):
         return self.active_cards.get(id(item_data))
+
     def dragEnterEvent(self, event):
         if event.mimeData().hasText():
             event.accept()
@@ -146,6 +149,7 @@ class PDFGrid(QWidget):
             self.refresh_grid_visuals()
         else:
             event.ignore()
+
     def dragMoveEvent(self, event):
         event.accept()
         if not self.dragged_item_data:
@@ -170,6 +174,7 @@ class PDFGrid(QWidget):
                     self.items_changed.emit()
             except ValueError:
                 pass
+
     def dropEvent(self, event):
         self.dragged_item_data = None
         self.refresh_grid_visuals()

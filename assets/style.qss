@@ -167,6 +167,7 @@ QLineEdit#PagesInput {
     padding: 5px 10px;
     font-size: 16px;
     background-color: #f8f9fc;
+    
 }
 
 QLineEdit#PagesInput:focus {
@@ -190,7 +191,6 @@ QPushButton#BackButton:hover {
 }
 
 
-/* Split PDF Styles */
 QWidget#Sidebar {
     background-color: #ffffff;
     border-left: 1px solid #e0e0e0;
@@ -320,4 +320,25 @@ QLabel#SizeInfoLabel {
 QLabel#EncryptedIcon {
     font-size: 60px;
     color: #555;
+}
+QPushButton#ParityButton {
+    background-color: white;
+    border: 1px solid #999999;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555555;
+    height: 45px;     
+    width: 65px;      
+    margin: 0px;
+}
+
+QPushButton#ParityButton:hover {
+    background-color: #f0f8ff;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+QPushButton#ParityButton:pressed {
+    background-color: #e6f2ff;
 }

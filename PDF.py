@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QStackedWidget,
     QScrollArea,
-    QMessageBox,
 )
 from PyQt6.QtCore import Qt
 from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
@@ -20,6 +19,8 @@ from modules.MergePDF import MergePreviewWindow
 from modules.DeletePages import DeletePagesWindow
 from modules.SplitPDF import SplitPDFWindow
 from assets.config import *
+
+
 class ToolCard(QFrame):
     def __init__(self, name, description, icon, tool_type, main_window):
         super().__init__()
@@ -55,6 +56,7 @@ class ToolCard(QFrame):
         layout.addWidget(self.desc_label)
         layout.addStretch()
         layout.addWidget(self.btn)
+
     def launch_tool(self) -> None:
         if self.tool_type == "merge":
             self.main_window.launch_merge_tool()
@@ -62,31 +64,24 @@ class ToolCard(QFrame):
             self.main_window.launch_delete_tool()
         elif self.tool_type == "split":
             self.main_window.launch_split_tool()
+
+
 class DashboardWidget(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
         self.tool_cards = []
         self._init_ui()
+
     def _init_ui(self):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.scroll_area = QScrollArea()
+        self.scroll_area.setObjectName("DashboardScrollArea")
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll_area.setStyleSheet(
-            """
-            QScrollArea { background: transparent; border: none; }
-            QScrollBar:vertical { background: transparent; width: 10px; margin: 0px; }
-            QScrollBar::handle:vertical { background-color: #c0c0c0; min-height: 20px; border-radius: 5px; }
-            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0px; }
-        """
-        )
         self.content_widget = QWidget()
         self.content_widget.setObjectName("DashboardContent")
-        self.content_widget.setStyleSheet(
-            "QWidget#DashboardContent { background: transparent; }"
-        )
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(40, 30, 40, 40)
         self.content_layout.setSpacing(10)
@@ -100,9 +95,6 @@ class DashboardWidget(QWidget):
         self.content_layout.addWidget(subtitle)
         self.grid_container = QWidget()
         self.grid_container.setObjectName("GridContainer")
-        self.grid_container.setStyleSheet(
-            "QWidget#GridContainer { background: transparent; }"
-        )
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(25)
         self.grid_layout.setContentsMargins(0, 20, 0, 0)
@@ -143,9 +135,11 @@ class DashboardWidget(QWidget):
         self.scroll_area.setWidget(self.content_widget)
         layout.addWidget(self.scroll_area)
         apply_stylesheet(self, STYLESHEET_MAIN)
+
     def resizeEvent(self, event):
         self.reflow_grid()
         super().resizeEvent(event)
+
     def reflow_grid(self):
         for i in reversed(range(self.grid_layout.count())):
             item = self.grid_layout.itemAt(i)
@@ -159,6 +153,8 @@ class DashboardWidget(QWidget):
             row = i // cols
             col = i % cols
             self.grid_layout.addWidget(card, row, col)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -179,12 +175,16 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
         self.dashboard = DashboardWidget(self)
         self.stack.addWidget(self.dashboard)
+
     def launch_merge_tool(self) -> None:
         self._launch_tool_generic("merge", MERGE_MAX_FILES, MERGE_TEMP_FOLDER)
+
     def launch_delete_tool(self) -> None:
         self._launch_tool_generic("delete", DELETE_MAX_FILES, DELETE_TEMP_FOLDER)
+
     def launch_split_tool(self) -> None:
         self._launch_tool_generic("split", SPLIT_MAX_FILES, SPLIT_TEMP_FOLDER)
+
     def _launch_tool_generic(
         self, tool_type: str, max_files: int, temp_folder: str
     ) -> None:
@@ -211,12 +211,15 @@ class MainWindow(QMainWindow):
             cleanup_temp_folder(temp_folder)
         finally:
             QApplication.restoreOverrideCursor()
+
     def return_to_dashboard(self):
         current_widget = self.stack.currentWidget()
         self.stack.setCurrentWidget(self.dashboard)
         if current_widget != self.dashboard:
             self.stack.removeWidget(current_widget)
             current_widget.deleteLater()
+
+
 def main():
     app = QApplication.instance()
     if not app:
@@ -224,5 +227,7 @@ def main():
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+
 if __name__ == "__main__":
     main()

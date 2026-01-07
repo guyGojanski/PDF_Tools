@@ -4,7 +4,6 @@ import logging
 from typing import List
 from PyQt6.QtWidgets import (
     QApplication,
-    QWidget,
     QLabel,
     QPushButton,
     QFileDialog,
@@ -21,7 +20,10 @@ from component.toolsForPDF import (
     is_valid_pdf,
 )
 from assets.config import FILE_PICKER_DEFAULT_FOLDER, STYLESHEET_TOOLS
+
 logger = logging.getLogger(__name__)
+
+
 class FileSelector(QDialog):
     def __init__(self, max_files: int, target_folder: str = "temp_files"):
         super().__init__()
@@ -34,6 +36,7 @@ class FileSelector(QDialog):
         self.setFixedSize(400, 220)
         self.setAcceptDrops(True)
         self._init_ui()
+
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
         self.label = QLabel(f"Drag up to {self.max_files} files here\n(Local Copy)")
@@ -50,16 +53,20 @@ class FileSelector(QDialog):
         self.overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.overlay.resize(self.size())
         self.overlay.hide()
+
     def dragEnterEvent(self, event) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
             self.overlay.show()
+
     def dragLeaveEvent(self, event) -> None:
         self.overlay.hide()
+
     def dropEvent(self, event) -> None:
         self.overlay.hide()
         files = [u.toLocalFile() for u in event.mimeData().urls()]
         self.process_files(files)
+
     def open_files(self) -> None:
         initial_dir = get_downloads_folder()
         files, _ = QFileDialog.getOpenFileNames(
@@ -67,6 +74,7 @@ class FileSelector(QDialog):
         )
         if files:
             self.process_files(files)
+
     def process_files(self, files: List[str]) -> None:
         if len(files) > self.max_files:
             QMessageBox.warning(
@@ -117,6 +125,8 @@ class FileSelector(QDialog):
             QMessageBox.warning(self, "Invalid Files Skipped", msg)
         self.selected_files = copied_paths
         self.accept()
+
+
 def get_files(
     max_files: int, target_folder: str = FILE_PICKER_DEFAULT_FOLDER
 ) -> List[str]:

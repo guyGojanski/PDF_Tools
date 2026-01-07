@@ -64,3 +64,33 @@ QPushButton#LaunchButton:disabled {
     background-color: #E4E6EB;
     color: #B0B3B8;
 }
+
+QWidget#DashboardContent {
+    background: transparent;
+}
+
+QWidget#GridContainer {
+    background: transparent;
+}
+
+QScrollArea#DashboardScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea#DashboardScrollArea QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollArea#DashboardScrollArea QScrollBar::handle:vertical {
+    background-color: #c0c0c0;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollArea#DashboardScrollArea QScrollBar::add-line:vertical,
+QScrollArea#DashboardScrollArea QScrollBar::sub-line:vertical {
+    height: 0px;
+}

@@ -4,18 +4,23 @@ import platform
 import subprocess
 import logging
 from contextlib import contextmanager
-from typing import Optional, Tuple, List, Any
+from typing import Optional, List
 import fitz
 from pypdf import PdfReader, PdfWriter
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton, QMessageBox
+from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
+
+
 def get_downloads_folder() -> str:
     if os.name == "nt":
         return os.path.join(os.environ["USERPROFILE"], "Downloads")
     return os.path.join(os.path.expanduser("~"), "Downloads")
+
+
 def open_file(path: str) -> None:
     try:
         if platform.system() == "Windows":
@@ -26,11 +31,8 @@ def open_file(path: str) -> None:
             subprocess.call(("xdg-open", path))
     except Exception as e:
         logger.error(f"Failed to open file {path}: {e}")
-def validate_only_pdfs(file_list: List[str]) -> Tuple[bool, Optional[str]]:
-    for f in file_list:
-        if not f.lower().endswith(".pdf"):
-            return False, os.path.basename(f)
-    return True, None
+
+
 def is_valid_pdf(path: str) -> bool:
     try:
         if os.path.getsize(path) == 0:
@@ -49,6 +51,8 @@ def is_valid_pdf(path: str) -> bool:
             return False
     except Exception:
         return False
+
+
 def is_pdf_encrypted(path: str) -> bool:
     try:
         doc = fitz.open(path)
@@ -57,13 +61,11 @@ def is_pdf_encrypted(path: str) -> bool:
         return encrypted
     except:
         return False
+
+
 def attempt_pdf_decryption(
     src_path: str, password: str, temp_folder: str
 ) -> Optional[str]:
-    """
-    מנסה לפתוח קובץ עם סיסמה. אם מצליח, שומר עותק לא מוצפן בתיקייה הזמנית ומחזיר את הנתיב החדש.
-    אם נכשל, מחזיר None.
-    """
     try:
         reader = PdfReader(src_path)
         if reader.is_encrypted:
@@ -83,8 +85,12 @@ def attempt_pdf_decryption(
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
         return None
+
+
 def calculate_rotation(current_angle: int) -> int:
     return (current_angle - 90) % 360
+
+
 def get_pdf_thumbnail(
     file_path: str,
     page_num: int = 0,
@@ -116,6 +122,8 @@ def get_pdf_thumbnail(
     finally:
         if doc:
             doc.close()
+
+
 def apply_stylesheet(widget: QWidget, filename: str = "assets/style.qss") -> None:
     possible_paths = [
         filename,
@@ -131,21 +139,29 @@ def apply_stylesheet(widget: QWidget, filename: str = "assets/style.qss") -> Non
             except Exception as e:
                 logger.warning(f"Failed to load stylesheet {path}: {e}")
                 continue
+
+
 def cleanup_temp_folder(folder_path: str) -> None:
     if os.path.exists(folder_path):
         try:
             shutil.rmtree(folder_path)
         except OSError as e:
             logger.warning(f"Failed to cleanup {folder_path}: {e}")
+
+
 def pick_pdf_files(parent: QWidget) -> List[str]:
     files, _ = QFileDialog.getOpenFileNames(
         parent, "Select PDF Files", "", "PDF Files (*.pdf)"
     )
     return files
+
+
 def truncate_filename(filename: str, limit: int = 20) -> str:
     if len(filename) > limit:
         return filename[: limit - 3] + "..."
     return filename
+
+
 def safe_copy_file(src_path: str, target_folder: str) -> str:
     try:
         if not os.path.exists(target_folder):
@@ -167,6 +183,8 @@ def safe_copy_file(src_path: str, target_folder: str) -> str:
         raise OSError(f"Permission denied: {e}")
     except OSError as e:
         raise OSError(f"Disk full or IO error: {e}")
+
+
 @contextmanager
 def button_operation(button: QPushButton, loading_text: str, original_text: str):
     button.setText(loading_text)
@@ -176,6 +194,8 @@ def button_operation(button: QPushButton, loading_text: str, original_text: str)
     finally:
         button.setText(original_text)
         button.setEnabled(True)
+
+
 def get_unique_filename(folder: str, filename: str) -> str:
     dest_path = os.path.join(folder, filename)
     if not os.path.exists(dest_path):
@@ -187,6 +207,8 @@ def get_unique_filename(folder: str, filename: str) -> str:
         if not os.path.exists(candidate):
             return candidate
         counter += 1
+
+
 class BaseToolWindow(QWidget):
     back_to_dashboard = pyqtSignal()
 
@@ -196,6 +218,15 @@ class BaseToolWindow(QWidget):
         self.header_title = header_title
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         apply_stylesheet(self, "assets/style.qss")
+
     def go_back(self) -> None:
         cleanup_temp_folder(self.temp_folder)
         self.back_to_dashboard.emit()
+
+
+def get_parity_indices(total_pages: int, parity: str) -> List[int]:
+    if parity == "odd":
+        return list(range(0, total_pages, 2))
+    elif parity == "even":
+        return list(range(1, total_pages, 2))
+    return []

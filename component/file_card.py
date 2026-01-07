@@ -7,6 +7,8 @@ from component.toolsForPDF import (
     calculate_rotation,
     truncate_filename,
 )
+
+
 class FileCard(QFrame):
     delete_requested = pyqtSignal(object)
     rotate_requested = pyqtSignal(object)
@@ -65,8 +67,10 @@ class FileCard(QFrame):
         self.rotate_btn.clicked.connect(self.on_rotate_clicked)
         self.rotate_btn.setToolTip("Rotate 90° Left")
         self.update_visuals()
+
     def set_number(self, num):
         self.number_label.setText(str(num))
+
     def update_visuals(self):
         if self.is_encrypted:
             self.image_label.setText("🔒")
@@ -78,6 +82,7 @@ class FileCard(QFrame):
             self.setToolTip("")
             self.rotate_btn.setEnabled(True)
             self.generate_thumbnail()
+
     def generate_thumbnail(self):
         if self.is_encrypted:
             return
@@ -86,11 +91,13 @@ class FileCard(QFrame):
             self.image_label.setPixmap(pixmap)
         else:
             self.image_label.setText("📄")
+
     def mousePressEvent(self, event):
         if not self.overlay_label.isHidden():
             self.delete_requested.emit(self.item_data)
         else:
             super().mousePressEvent(event)
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.overlay_label.setGeometry(0, 0, self.width(), self.height())
@@ -99,23 +106,28 @@ class FileCard(QFrame):
         self.delete_btn.move(center_x + 5, center_y - 15)
         self.rotate_btn.move(center_x - 35, center_y - 15)
         self.number_label.move(5, 5)
+
     def enterEvent(self, event):
         self.delete_btn.show()
         if not self.is_encrypted:
             self.rotate_btn.show()
         super().enterEvent(event)
+
     def leaveEvent(self, event):
         self.delete_btn.hide()
         self.rotate_btn.hide()
         super().leaveEvent(event)
+
     def on_delete_clicked(self):
         self.delete_requested.emit(self.item_data)
+
     def on_rotate_clicked(self):
         if self.is_encrypted:
             return
         self.rotation_angle = calculate_rotation(self.rotation_angle)
         self.generate_thumbnail()
         self.rotate_requested.emit(self.item_data)
+
     def update_content(self, item_data):
         self.item_data = item_data
         self.file_path = item_data["path"]
@@ -128,6 +140,7 @@ class FileCard(QFrame):
         self.name_label.setToolTip(file_name)
         self.update_visuals()
         self.set_placeholder(False)
+
     def set_placeholder(self, is_placeholder):
         self.setProperty("placeholder", is_placeholder)
         self.style().unpolish(self)
@@ -142,6 +155,7 @@ class FileCard(QFrame):
             self.image_label.show()
             self.name_label.show()
             self.number_label.show()
+
     def mouseMoveEvent(self, e):
         if self.delete_btn.underMouse() or self.rotate_btn.underMouse():
             return
@@ -157,6 +171,7 @@ class FileCard(QFrame):
             self.render(pixmap)
             drag.setPixmap(pixmap)
             drag.exec(Qt.DropAction.MoveAction)
+
     def set_overlay(self, text, visible=True):
         self.overlay_label.setText(text)
         if visible:

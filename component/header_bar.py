@@ -1,5 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt, pyqtSignal
+
+
 class HeaderBar(QWidget):
     back_clicked = pyqtSignal()
 
@@ -7,6 +9,7 @@ class HeaderBar(QWidget):
         super().__init__(parent)
         self.setFixedHeight(70)
         self._init_ui(title)
+
     def _init_ui(self, title):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(20, 0, 20, 0)

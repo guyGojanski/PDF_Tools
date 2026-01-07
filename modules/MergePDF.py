@@ -1,4 +1,3 @@
-import sys
 import os
 from PyQt6.QtWidgets import (
     QPushButton,

@@ -7,8 +7,6 @@ from component.toolsForPDF import (
     calculate_rotation,
     truncate_filename,
 )
-
-
 class FileCard(QFrame):
     delete_requested = pyqtSignal(object)
     rotate_requested = pyqtSignal(object)
@@ -20,6 +18,7 @@ class FileCard(QFrame):
         self.file_path = item_data["path"]
         self.rotation_angle = item_data.get("rotation", 0)
         self.page_num = item_data.get("page", 0)
+        self.is_encrypted = item_data.get("encrypted", False)
         self.setObjectName("FileCardFrame")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.number_label = QLabel(str(index), self)
@@ -65,24 +64,33 @@ class FileCard(QFrame):
         self.rotate_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.rotate_btn.clicked.connect(self.on_rotate_clicked)
         self.rotate_btn.setToolTip("Rotate 90° Left")
-        self.generate_thumbnail()
-
+        self.update_visuals()
     def set_number(self, num):
         self.number_label.setText(str(num))
-
+    def update_visuals(self):
+        if self.is_encrypted:
+            self.image_label.setText("🔒")
+            self.image_label.setStyleSheet("font-size: 60px; color: #555;")
+            self.setToolTip("Password required")
+            self.rotate_btn.setEnabled(False)
+        else:
+            self.image_label.setStyleSheet("")
+            self.setToolTip("")
+            self.rotate_btn.setEnabled(True)
+            self.generate_thumbnail()
     def generate_thumbnail(self):
+        if self.is_encrypted:
+            return
         pixmap = get_pdf_thumbnail(self.file_path, self.page_num, self.rotation_angle)
         if pixmap:
             self.image_label.setPixmap(pixmap)
         else:
             self.image_label.setText("📄")
-
     def mousePressEvent(self, event):
         if not self.overlay_label.isHidden():
             self.delete_requested.emit(self.item_data)
         else:
             super().mousePressEvent(event)
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.overlay_label.setGeometry(0, 0, self.width(), self.height())
@@ -91,37 +99,35 @@ class FileCard(QFrame):
         self.delete_btn.move(center_x + 5, center_y - 15)
         self.rotate_btn.move(center_x - 35, center_y - 15)
         self.number_label.move(5, 5)
-
     def enterEvent(self, event):
         self.delete_btn.show()
-        self.rotate_btn.show()
+        if not self.is_encrypted:
+            self.rotate_btn.show()
         super().enterEvent(event)
-
     def leaveEvent(self, event):
         self.delete_btn.hide()
         self.rotate_btn.hide()
         super().leaveEvent(event)
-
     def on_delete_clicked(self):
         self.delete_requested.emit(self.item_data)
-
     def on_rotate_clicked(self):
+        if self.is_encrypted:
+            return
         self.rotation_angle = calculate_rotation(self.rotation_angle)
         self.generate_thumbnail()
         self.rotate_requested.emit(self.item_data)
-
     def update_content(self, item_data):
         self.item_data = item_data
         self.file_path = item_data["path"]
         self.rotation_angle = item_data.get("rotation", 0)
         self.page_num = item_data.get("page", 0)
+        self.is_encrypted = item_data.get("encrypted", False)
         file_name = os.path.basename(self.file_path)
         display_name = truncate_filename(file_name)
         self.name_label.setText(display_name)
         self.name_label.setToolTip(file_name)
-        self.generate_thumbnail()
+        self.update_visuals()
         self.set_placeholder(False)
-
     def set_placeholder(self, is_placeholder):
         self.setProperty("placeholder", is_placeholder)
         self.style().unpolish(self)
@@ -136,7 +142,6 @@ class FileCard(QFrame):
             self.image_label.show()
             self.name_label.show()
             self.number_label.show()
-
     def mouseMoveEvent(self, e):
         if self.delete_btn.underMouse() or self.rotate_btn.underMouse():
             return
@@ -152,7 +157,6 @@ class FileCard(QFrame):
             self.render(pixmap)
             drag.setPixmap(pixmap)
             drag.exec(Qt.DropAction.MoveAction)
-
     def set_overlay(self, text, visible=True):
         self.overlay_label.setText(text)
         if visible:

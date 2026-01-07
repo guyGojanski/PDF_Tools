@@ -46,12 +46,12 @@ QLabel#ToolDesc {
 }
 
 QPushButton#LaunchButton {
-    background-color: #0084FF;
-    color: white;
+    background-color: #00d9ff;
+    color: black;
     font-family: "Segoe UI", Arial;
     font-size: 14px;
     font-weight: bold;
-    border-radius: 10px;
+    border-radius: 20px;
     padding: 12px;
     margin: 10px;
 }

@@ -69,11 +69,18 @@ class FileSelector(QDialog):
 
     def open_files(self) -> None:
         initial_dir = get_downloads_folder()
-        files, _ = QFileDialog.getOpenFileNames(
-            self, "Select Files", initial_dir, "PDF Files (*.pdf)"
-        )
-        if files:
-            self.process_files(files)
+        if self.max_files == 1:
+            file_path, _ = QFileDialog.getOpenFileName(
+                self, "Select Single File", initial_dir, "PDF Files (*.pdf)"
+            )
+            if file_path:
+                self.process_files([file_path])
+        else:
+            files, _ = QFileDialog.getOpenFileNames(
+                self, f"Select up to {self.max_files} Files", initial_dir, "PDF Files (*.pdf)"
+            )
+            if files:
+                self.process_files(files)
 
     def process_files(self, files: List[str]) -> None:
         if len(files) > self.max_files:

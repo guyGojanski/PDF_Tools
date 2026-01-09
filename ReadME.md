@@ -51,10 +51,8 @@ ReadME.md                       # This file
 
 1. **Clone the repository**:
 
-   ```bash
    git clone https://github.com/guyGojanski/PDF_Tools.git
    cd PDF_Tools
-   ```
 
 2. **Create a virtual environment** (recommended):
 

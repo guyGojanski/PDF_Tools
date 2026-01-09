@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import platform
 import subprocess
@@ -11,6 +12,7 @@ from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton
 from assets.config import *
+
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -35,7 +37,6 @@ def open_file(path: str) -> None:
 
 
 def is_valid_pdf(path: str) -> bool:
-    """Validate if a file is a valid PDF (not empty, readable)."""
     try:
         if not os.path.exists(path):
             logger.warning(f"File not found: {path}")
@@ -54,7 +55,8 @@ def is_valid_pdf(path: str) -> bool:
                 return False
             doc.close()
             return True
-        except fitz.FileError:
+        
+        except Exception as e:
             logger.warning(f"Invalid PDF file: {path}")
             return False
     except PermissionError:
@@ -66,7 +68,6 @@ def is_valid_pdf(path: str) -> bool:
 
 
 def is_pdf_encrypted(path: str) -> bool:
-    """Check if a PDF file is encrypted."""
     try:
         if not os.path.exists(path):
             logger.warning(f"File not found: {path}")
@@ -77,9 +78,6 @@ def is_pdf_encrypted(path: str) -> bool:
         return encrypted
     except PermissionError:
         logger.error(f"Permission denied reading file: {path}")
-        return False
-    except fitz.FileError:
-        logger.error(f"Invalid PDF file: {path}")
         return False
     except Exception as e:
         logger.error(f"Error checking if PDF is encrypted {path}: {e}")
@@ -164,16 +162,17 @@ def apply_stylesheet(widget: QWidget, filename: str = STYLESHEET) -> None:
                 continue
 
 
-def cleanup_temp_folder(folder: str, retries: int = 3, delay: float = 0.2):
+def cleanup_temp_folder(folder: str):
     if not os.path.exists(folder):
         return
-    for _ in range(retries):
+    for _ in range(3):
         try:
             shutil.rmtree(folder)
             return
         except PermissionError:
-            time.sleep(delay)
+            time.sleep(0.3)
     shutil.rmtree(folder, ignore_errors=True)
+
 
 def pick_pdf_files(parent: QWidget) -> List[str]:
     files, _ = QFileDialog.getOpenFileNames(

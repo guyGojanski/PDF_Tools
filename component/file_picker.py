@@ -28,6 +28,8 @@ class FileSelector(QDialog):
         self.setFixedSize(FILE_PICKER_WIDTH, FILE_PICKER_HEIGHT)
         self.setAcceptDrops(True)
         self._init_ui()
+        self.show()
+
 
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)

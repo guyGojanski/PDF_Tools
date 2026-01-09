@@ -719,9 +719,11 @@ class SplitPDFWindow(BaseToolWindow):
                 QMessageBox.critical(self, "Error", f"Size Split Error: {str(e)}")
 
     def closeEvent(self, event) -> None:
-        try:
-            if self.doc:
-                self.doc.close()
-        finally:
-            cleanup_temp_folder(self.temp_folder)
-            super().closeEvent(event)
+            try:
+                if hasattr(self, 'doc') and self.doc and not self.doc.is_closed:
+                    self.doc.close()
+            except Exception:
+                pass
+            finally:
+                cleanup_temp_folder(self.temp_folder)
+                super().closeEvent(event)

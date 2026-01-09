@@ -37,18 +37,67 @@ QScrollBar::sub-line:vertical {
 }
 
 /* Inputs (Global) */
-QLineEdit, QSpinBox, QDoubleSpinBox {
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
     background-color: #ffffff;
     border: 1px solid #ced4da;
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 14px;
-    selection-background-color: #0d6efd;
 }
 
-QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
     border: 2px solid #86b7fe;
     background-color: #ffffff;
+}
+
+/* QComboBox Dropdown Arrow */
+QComboBox::drop-down {
+    border: none;
+    width: 0px;
+}
+
+QComboBox::down-arrow {
+    width: 0;
+    height: 0;
+    border: none;
+}
+
+QComboBox::down-arrow:hover {
+    border: none;
+}
+
+/* QComboBox Dropdown List */
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 4px;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+QComboBox QAbstractItemView::item {
+    padding: 6px 12px;
+    border-radius: 3px;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #0d6efd;
+}
+
+/* Spinbox - Hide buttons, enable mouse wheel scrolling */
+QSpinBox::up-button, QDoubleSpinBox::up-button,
+QSpinBox::down-button, QDoubleSpinBox::down-button {
+    width: 0px;
+    border: none;
+}
+
+QSpinBox, QDoubleSpinBox {
+    padding-right: 12px;
 }
 
 /* ==========================================================================
@@ -103,24 +152,23 @@ QLabel#ToolDesc {
 }
 
 QPushButton#LaunchButton {
-    background-color: #00d9ff; /* Bright Cyan */
-    color: black;
+    background-color: #0d6efd; /* Primary */
+    color: white;
     font-size: 14px;
-    font-weight: bold;
-    border-radius: 20px;
-    padding: 12px;
+    font-weight: 700;
+    border-radius: 14px;
+    padding: 12px 18px;
     margin: 10px;
     border: none;
 }
 
 QPushButton#LaunchButton:hover {
-    background-color: #0073E1; /* Darker Blue on hover */
-    color: white;
+    background-color: #0b5ed7;
 }
 
 QPushButton#LaunchButton:disabled {
-    background-color: #E4E6EB;
-    color: #B0B3B8;
+    background-color: #e2e6ea;
+    color: #adb5bd;
 }
 
 /* ==========================================================================
@@ -134,18 +182,21 @@ QWidget#MainWindow, QWidget#MergePreviewWindow, QWidget#SplitPDFWindow, QDialog 
 
 /* Headers & Navigation */
 QPushButton#BackButton {
-    background-color: transparent;
-    color: #0eb4ca;
-    font-size: 20px;
-    font-weight: bold;
-    border: none;
-    padding-left: 5px;
-    min-width: 120px;
+    background-color: #ffffff;
+    color: #0d6efd;
+    font-size: 18px;
+    font-weight: 700;
+    border: 1px solid #0d6efd;
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 110px;
     min-height: 40px;
 }
 
 QPushButton#BackButton:hover {
-    color: #0073E1;
+    background-color: #e7f1ff;
+    border-color: #0a58ca;
+    color: #0a58ca;
 }
 
 QLabel#MergeTitle, QLabel#DialogTitle {
@@ -168,17 +219,17 @@ QLabel#InstructionLabel {
 }
 
 QPushButton#SelectButton {
-    background-color: #00dff8;
-    color: black;
+    background-color: #0d6efd;
+    color: white;
     font-size: 14pt;
-    font-weight: bold;
+    font-weight: 700;
     padding: 10px 20px;
     border: none;
     border-radius: 10px;
 }
 
 QPushButton#SelectButton:hover {
-    background-color: #a1eaf2;
+    background-color: #0b5ed7;
 }
 
 QLabel#Overlay {
@@ -239,7 +290,7 @@ QPushButton#DeleteButton:hover {
 }
 
 QPushButton#RotateButton {
-    background-color: rgba(23, 162, 184, 0.9);
+    background-color: rgba(13, 110, 253, 0.9);
     color: white;
     font-weight: bold;
     font-size: 18px;
@@ -249,7 +300,16 @@ QPushButton#RotateButton {
 }
 
 QPushButton#RotateButton:hover {
-    background-color: rgba(0, 180, 210, 1);
+    background-color: rgba(11, 94, 215, 1);
+}
+
+/* Card Overlay (Big Red X for delete mode) */
+QLabel#CardOverlay {
+    background-color: rgba(220, 53, 69, 0.85);  /* Red with transparency */
+    color: white;
+    font-size: 72px;  /* Big X */
+    font-weight: bold;
+    border-radius: 8px;
 }
 
 /* ==========================================================================
@@ -259,44 +319,37 @@ QPushButton#RotateButton:hover {
 /* Add Button (+) */
 QPushButton#AddButton {
     background-color: white;
-    color: #dc3545;
+    color: #0d6efd;
     font-size: 30px;
     font-weight: bold;
-    border: 2px solid #333;
+    border: 2px solid #0d6efd;
     border-radius: 20px;
     padding-bottom: 5px;
 }
 
 QPushButton#AddButton:hover {
-    background-color: #f0f0f0;
+    background-color: #e7f1ff;
+    border-color: #0a58ca;
 }
 
 /* Primary Action Buttons (Merge, Split, Save) */
 QPushButton#MergeButton, QPushButton#SplitActionBtn, QPushButton#SendButton {
-    background-color: #28a745; /* Green */
+    background-color: #0d6efd;
     color: white;
     font-size: 16px;
-    font-weight: bold;
-    border-radius: 8px;
+    font-weight: 700;
+    border-radius: 10px;
     padding: 12px 20px;
     border: none;
 }
 
 QPushButton#MergeButton:hover, QPushButton#SplitActionBtn:hover, QPushButton#SendButton:hover {
-    background-color: #218838;
+    background-color: #0b5ed7;
 }
 
-QPushButton#SplitActionBtn:disabled {
+QPushButton#SplitActionBtn:disabled, QPushButton#MergeButton:disabled, QPushButton#SendButton:disabled {
     background-color: #e2e6ea;
     color: #adb5bd;
-}
-
-/* Specific red/blue buttons if needed */
-QPushButton#SendButton {
-    background-color: #e74c3c; /* Red variant */
-}
-QPushButton#SendButton:hover {
-    background-color: #c0392b;
 }
 
 /* ==========================================================================
@@ -304,22 +357,39 @@ QPushButton#SendButton:hover {
    ========================================================================== */
 
 QPushButton#ParityButton {
-    background-color: white;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: bold;
-    color: #555555;
+    background-color: #ffffff;
+    border: 2px solid #0d6efd;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0d6efd;
 }
 
 QPushButton#ParityButton:hover {
-    background-color: #f0f8ff;
-    border: 1px solid #007bff;
-    color: #007bff;
+    background-color: #e7f1ff;
+    border-color: #0a58ca;
+    color: #0a58ca;
 }
 
 QPushButton#ParityButton:pressed {
-    background-color: #e6f2ff;
+    background-color: #d6e7ff;
+}
+
+QLabel#SidebarStatLabel {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333333;
+}
+
+QLabel#RemoveLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: #444444;
+}
+
+QLabel#SidebarHint {
+    font-size: 12px;
+    color: #6c757d;
 }
 
 /* ==========================================================================
@@ -347,7 +417,6 @@ QToolButton#ModeButton {
     color: #5f6368;
     font-weight: bold;
     font-size: 14px;
-    qproperty-toolButtonStyle: ToolButtonTextUnderIcon;
 }
 
 QToolButton#ModeButton:checked {
@@ -374,8 +443,8 @@ QPushButton[class="RangeTypeBtn"] {
 
 QPushButton[class="RangeTypeBtn"]:checked {
     background-color: #ffffff;
-    border: 2px solid #dc3545; /* Red Highlight like in image */
-    color: #dc3545;
+    border: 2px solid #0d6efd;
+    color: #0d6efd;
 }
 
 QPushButton[class="RangeTypeBtn"]:hover {
@@ -475,4 +544,9 @@ QLabel#GroupTitle {
     font-weight: bold;
     color: #007bff;
     font-size: 13px;
+}
+
+QLabel#SizeEstimate {
+    color: #666666;
+    font-size: 11px;
 }

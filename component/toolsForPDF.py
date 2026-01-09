@@ -4,13 +4,13 @@ import platform
 import subprocess
 import logging
 from contextlib import contextmanager
-from typing import Optional, List
+from typing import Optional, List, Tuple
 import fitz
 from pypdf import PdfReader, PdfWriter
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton
-from assets.config import STYLESHEET
+from assets.config import *
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -35,8 +35,13 @@ def open_file(path: str) -> None:
 
 
 def is_valid_pdf(path: str) -> bool:
+    """Validate if a file is a valid PDF (not empty, readable)."""
     try:
+        if not os.path.exists(path):
+            logger.warning(f"File not found: {path}")
+            return False
         if os.path.getsize(path) == 0:
+            logger.warning(f"File is empty: {path}")
             return False
         try:
             doc = fitz.open(path)
@@ -44,23 +49,40 @@ def is_valid_pdf(path: str) -> bool:
                 doc.close()
                 return True
             if len(doc) == 0:
+                logger.warning(f"PDF has no pages: {path}")
                 doc.close()
                 return False
             doc.close()
             return True
-        except:
+        except fitz.FileError:
+            logger.warning(f"Invalid PDF file: {path}")
             return False
-    except Exception:
+    except PermissionError:
+        logger.error(f"Permission denied reading file: {path}")
+        return False
+    except Exception as e:
+        logger.error(f"Error validating PDF {path}: {e}")
         return False
 
 
 def is_pdf_encrypted(path: str) -> bool:
+    """Check if a PDF file is encrypted."""
     try:
+        if not os.path.exists(path):
+            logger.warning(f"File not found: {path}")
+            return False
         doc = fitz.open(path)
         encrypted = doc.is_encrypted
         doc.close()
         return encrypted
-    except:
+    except PermissionError:
+        logger.error(f"Permission denied reading file: {path}")
+        return False
+    except fitz.FileError:
+        logger.error(f"Invalid PDF file: {path}")
+        return False
+    except Exception as e:
+        logger.error(f"Error checking if PDF is encrypted {path}: {e}")
         return False
 
 
@@ -142,13 +164,16 @@ def apply_stylesheet(widget: QWidget, filename: str = STYLESHEET) -> None:
                 continue
 
 
-def cleanup_temp_folder(folder_path: str) -> None:
-    if os.path.exists(folder_path):
+def cleanup_temp_folder(folder: str, retries: int = 3, delay: float = 0.2):
+    if not os.path.exists(folder):
+        return
+    for _ in range(retries):
         try:
-            shutil.rmtree(folder_path)
-        except OSError as e:
-            logger.warning(f"Failed to cleanup {folder_path}: {e}")
-
+            shutil.rmtree(folder)
+            return
+        except PermissionError:
+            time.sleep(delay)
+    shutil.rmtree(folder, ignore_errors=True)
 
 def pick_pdf_files(parent: QWidget) -> List[str]:
     files, _ = QFileDialog.getOpenFileNames(
@@ -231,3 +256,98 @@ def get_parity_indices(total_pages: int, parity: str) -> List[int]:
     elif parity == "even":
         return list(range(1, total_pages, 2))
     return []
+
+
+def parse_page_ranges(text: str, total_pages: int) -> List[int]:
+    """Parse page range string like '1-4,7,10-12' into list of 0-based page indices."""
+    pages = set()
+    if not text:
+        return []
+    parts = text.split(",")
+    try:
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            if "-" in part:
+                if part.endswith("-") or part.startswith("-"):
+                    continue
+                start_str, end_str = part.split("-", 1)
+                start, end = int(start_str), int(end_str)
+                if 1 <= start <= end <= total_pages:
+                    pages.update(range(start - 1, end))
+            else:
+                p = int(part)
+                if 1 <= p <= total_pages:
+                    pages.add(p - 1)
+        return sorted(list(pages))
+    except ValueError:
+        return []
+
+
+def format_pages_as_ranges(pages: List[int]) -> str:
+    """Format list of 1-based page numbers into range string like '1-4,7,10-12'."""
+    if not pages:
+        return ""
+    sorted_pages = sorted(pages)
+    ranges = []
+    start = prev = sorted_pages[0]
+    for p in sorted_pages[1:]:
+        if p == prev + 1:
+            prev = p
+            continue
+        ranges.append((start, prev))
+        start = prev = p
+    ranges.append((start, prev))
+    parts = [f"{s}-{e}" if s != e else str(s) for s, e in ranges]
+    return ",".join(parts)
+
+
+def write_pdf_with_rotation(
+    writer, reader, page_indices: List[int], rotations: dict = None
+) -> None:
+    """Add pages from reader to writer with optional rotation applied."""
+    for idx in page_indices:
+        if idx < len(reader.pages):
+            page = reader.pages[idx]
+            rotation = rotations.get(idx, 0) if rotations else 0
+            if rotation != 0:
+                page.rotate(rotation)
+            writer.add_page(page)
+
+
+def save_pdf_with_success(
+    writer,
+    output_name: str,
+    parent_widget=None,
+    success_msg: str = "File saved successfully!",
+) -> Optional[str]:
+    """Save PDF to Downloads with unique name and show success message."""
+    from PyQt6.QtWidgets import QMessageBox
+
+    try:
+        output_path = get_unique_filename(get_downloads_folder(), output_name)
+        with open(output_path, "wb") as f:
+            writer.write(f)
+        if parent_widget:
+            QMessageBox.information(parent_widget, "Success", success_msg)
+        open_file(output_path)
+        return output_path
+    except Exception as e:
+        if parent_widget:
+            QMessageBox.critical(parent_widget, "Error", f"Save failed: {str(e)}")
+        return None
+
+
+def create_progress_dialog(parent, title: str, label: str, maximum: int):
+    """Create a standard progress dialog."""
+    from PyQt6.QtWidgets import QProgressDialog
+    from PyQt6.QtCore import Qt
+
+    progress = QProgressDialog(label, "Cancel", 0, maximum, parent)
+    progress.setWindowTitle(title)
+    progress.setWindowModality(Qt.WindowModality.WindowModal)
+    progress.setMinimumDuration(0)
+    progress.setValue(0)
+    progress.show()
+    return progress

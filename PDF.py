@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap  # <--- הוספנו את QPixmap
 from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
 from component.file_picker import get_files
 from modules.MergePDF import MergePreviewWindow
@@ -22,7 +23,7 @@ from assets.config import *
 
 
 class ToolCard(QFrame):
-    def __init__(self, name, description, icon, tool_type, main_window):
+    def __init__(self, name, description, icon_path, tool_type, main_window):
         super().__init__()
         self.setObjectName("ToolCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -34,9 +35,27 @@ class ToolCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(12)
-        self.icon_label = QLabel(icon)
+
+        # === השינוי: טעינת תמונה ===
+        self.icon_label = QLabel()
         self.icon_label.setObjectName("ToolIcon")
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # בדיקה אם זה קובץ PNG וטעינה שלו
+        if icon_path and icon_path.endswith(".png"):
+            pixmap = QPixmap(icon_path)
+            # הקטנת התמונה לגודל מתאים (למשל 64x64)
+            scaled_pixmap = pixmap.scaled(
+                64,
+                64,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            self.icon_label.setPixmap(scaled_pixmap)
+        else:
+            # Fallback למקרה שאין תמונה (טקסט/אימוג'י)
+            self.icon_label.setText(icon_path if icon_path else "")
+
         self.name_label = QLabel(name)
         self.name_label.setObjectName("ToolName")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -105,25 +124,25 @@ class DashboardWidget(QWidget):
             (
                 "Merge PDF",
                 "Merge multiple PDF files into a single document flawlessly.",
-                "📚",
+                r"assets\ico\merge.png",
                 "merge",
             ),
             (
                 "Delete Pages",
                 "Delete, reorder or rotate pages in your PDF file.",
-                "✂️",
+                r"assets\ico\delete.png",
                 "delete",
             ),
             (
                 "Split PDF",
                 "Split a PDF into multiple files based on your preferences.",
-                "🧩",
+                r"assets\ico\split.png",
                 "split",
             ),
             (
                 "Compress PDF",
                 "Reduce the file size of your PDF without losing quality.",
-                "📉",
+                "悼",  # כאן השארתי את הישן כי לא הבאת לו תמונה, אם יש לך תעדכן
                 None,
             ),
         ]
@@ -134,7 +153,7 @@ class DashboardWidget(QWidget):
         self.content_layout.addStretch()
         self.scroll_area.setWidget(self.content_widget)
         layout.addWidget(self.scroll_area)
-        apply_stylesheet(self, STYLESHEET_MAIN)
+        apply_stylesheet(self, STYLESHEET)
 
     def resizeEvent(self, event):
         self.reflow_grid()
@@ -170,7 +189,7 @@ class MainWindow(QMainWindow):
         min_h = getattr(sys.modules.get("assets.config"), "MAIN_WINDOW_MIN_HEIGHT", 700)
         self.resize(start_w, start_h)
         self.setMinimumSize(min_w, min_h)
-        apply_stylesheet(self, STYLESHEET_MAIN)
+        apply_stylesheet(self, STYLESHEET)
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
         self.dashboard = DashboardWidget(self)

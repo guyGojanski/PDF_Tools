@@ -19,7 +19,7 @@ from component.toolsForPDF import (
     safe_copy_file,
     is_valid_pdf,
 )
-from assets.config import FILE_PICKER_DEFAULT_FOLDER, STYLESHEET_TOOLS
+from assets.config import FILE_PICKER_DEFAULT_FOLDER, STYLESHEET
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class FileSelector(QDialog):
         self.target_folder = target_folder
         self.selected_files: List[str] = []
         self.setObjectName("MainWindow")
-        apply_stylesheet(self, STYLESHEET_TOOLS)
+        apply_stylesheet(self, STYLESHEET)
         self.setWindowTitle("File Selector")
         self.setFixedSize(400, 220)
         self.setAcceptDrops(True)
@@ -77,7 +77,10 @@ class FileSelector(QDialog):
                 self.process_files([file_path])
         else:
             files, _ = QFileDialog.getOpenFileNames(
-                self, f"Select up to {self.max_files} Files", initial_dir, "PDF Files (*.pdf)"
+                self,
+                f"Select up to {self.max_files} Files",
+                initial_dir,
+                "PDF Files (*.pdf)",
             )
             if files:
                 self.process_files(files)

@@ -10,6 +10,7 @@ from pypdf import PdfReader, PdfWriter
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton
+from assets.config import STYLESHEET
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -124,7 +125,7 @@ def get_pdf_thumbnail(
             doc.close()
 
 
-def apply_stylesheet(widget: QWidget, filename: str = "assets/style.qss") -> None:
+def apply_stylesheet(widget: QWidget, filename: str = STYLESHEET) -> None:
     possible_paths = [
         filename,
         os.path.join("..", filename),
@@ -217,7 +218,7 @@ class BaseToolWindow(QWidget):
         self.temp_folder = temp_folder
         self.header_title = header_title
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        apply_stylesheet(self, "assets/style.qss")
+        apply_stylesheet(self, STYLESHEET)
 
     def go_back(self) -> None:
         cleanup_temp_folder(self.temp_folder)

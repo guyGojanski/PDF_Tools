@@ -6,33 +6,17 @@ from PyQt6.QtWidgets import (
     QLabel,
     QMessageBox,
     QApplication,
-    QProgressDialog,
     QDialog,
     QLineEdit,
+    QWidget,
+    QSizePolicy,
 )
 from PyQt6.QtCore import Qt
 from pypdf import PdfWriter, PdfReader
-
 from component.pdf_grid import PDFGrid
 from component.header_bar import HeaderBar
-from component.toolsForPDF import (
-    get_downloads_folder,
-    open_file,
-    cleanup_temp_folder,
-    pick_pdf_files,
-    safe_copy_file,
-    button_operation,
-    BaseToolWindow,
-    get_unique_filename,
-    is_valid_pdf,
-    is_pdf_encrypted,
-    attempt_pdf_decryption,
-)
-from assets.config import (
-    MERGE_MAX_FILES,
-    MERGE_HEADER_TITLE,
-    MERGED_OUTPUT_NAME,
-)
+from component.toolsForPDF import *
+from assets.config import *
 
 
 class PasswordInputDialog(QDialog):
@@ -40,7 +24,7 @@ class PasswordInputDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Password Required")
         self.setObjectName("PasswordDialog")
-        self.setFixedSize(450, 300)
+        self.setFixedSize(PASSWORD_DIALOG_WIDTH, PASSWORD_DIALOG_HEIGHT)
         self.password = None
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
@@ -58,25 +42,25 @@ class PasswordInputDialog(QDialog):
         self.input_field.setPlaceholderText("Enter Password")
         self.input_field.setEchoMode(QLineEdit.EchoMode.Password)
         input_container.addWidget(self.input_field)
-        self.eye_btn = QPushButton("👁️")
-        self.eye_btn.setObjectName("EyeButton")
-        self.eye_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.eye_btn.clicked.connect(self.toggle_visibility)
-        input_container.addWidget(self.eye_btn)
+        self.visibility_button = QPushButton("👁️")
+        self.visibility_button.setObjectName("EyeButton")
+        self.visibility_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.visibility_button.clicked.connect(self.toggle_visibility)
+        input_container.addWidget(self.visibility_button)
         layout.addLayout(input_container)
-        self.send_btn = QPushButton("Unlock & Add")
-        self.send_btn.setObjectName("SendButton")
-        self.send_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.send_btn.clicked.connect(self.verify)
-        layout.addWidget(self.send_btn)
+        self.submit_button = QPushButton("Unlock & Add")
+        self.submit_button.setObjectName("SendButton")
+        self.submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.submit_button.clicked.connect(self.verify)
+        layout.addWidget(self.submit_button)
 
     def toggle_visibility(self):
         if self.input_field.echoMode() == QLineEdit.EchoMode.Password:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Normal)
-            self.eye_btn.setText("🔒")
+            self.visibility_button.setText("🔒")
         else:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Password)
-            self.eye_btn.setText("👁️")
+            self.visibility_button.setText("👁️")
 
     def verify(self):
         pwd = self.input_field.text().strip()
@@ -86,7 +70,7 @@ class PasswordInputDialog(QDialog):
 
 
 class MergePreviewWindow(BaseToolWindow):
-    def __init__(self, file_list_paths, temp_folder, max_files=MERGE_MAX_FILES):
+    def __init__(self, file_list_paths, temp_folder, max_files=MAX_MERGE_FILES):
         super().__init__(temp_folder, MERGE_HEADER_TITLE)
         initial_items = []
         for f in file_list_paths:
@@ -94,49 +78,77 @@ class MergePreviewWindow(BaseToolWindow):
             initial_items.append(
                 {"path": f, "rotation": 0, "page": 0, "encrypted": encrypted}
             )
-
         self.max_files = max_files
         self._init_ui(initial_items)
 
     def _init_ui(self, initial_items):
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(20)
+        main_layout.setSpacing(15)
         main_layout.setContentsMargins(0, 0, 0, 20)
         self.header = HeaderBar(self.header_title)
         self.header.back_clicked.connect(self.go_back)
         main_layout.addWidget(self.header)
-        header_layout = QHBoxLayout()
-        header_layout.setContentsMargins(20, 0, 20, 0)
+        content_layout = QHBoxLayout()
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        center_container = QWidget()
+        center_layout = QVBoxLayout(center_container)
+        center_layout.setContentsMargins(20, 0, 20, 0)
+        center_layout.setSpacing(12)
+        title_row = QHBoxLayout()
+        title_row.setSpacing(10)
         self.title_label = QLabel()
         self.title_label.setObjectName("MergeTitle")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.add_btn = QPushButton("+")
         self.add_btn.setObjectName("AddButton")
         self.add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.add_btn.setFixedSize(40, 40)
+        self.add_btn.setFixedSize(ADD_BUTTON_SIZE, ADD_BUTTON_SIZE)
         self.add_btn.clicked.connect(self.on_add_clicked)
-        header_layout.addStretch()
-        header_layout.addWidget(self.title_label)
-        header_layout.addStretch()
-        header_layout.addWidget(self.add_btn)
-        main_layout.addLayout(header_layout)
+        title_row.addStretch()
+        title_row.addWidget(self.title_label)
+        title_row.addStretch()
+        title_row.addWidget(self.add_btn)
+        center_layout.addLayout(title_row)
         self.pdf_grid = PDFGrid(initial_items, max_items=self.max_files)
         self.pdf_grid.items_changed.connect(self.update_title)
-        main_layout.addWidget(self.pdf_grid)
+        center_layout.addWidget(self.pdf_grid)
+        content_layout.addWidget(center_container, stretch=1)
+        self.sidebar = QWidget()
+        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setFixedWidth(SIDEBAR_WIDTH)
+        self.sidebar.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
+        )
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setSpacing(14)
+        sidebar_layout.setContentsMargins(22, 18, 22, 18)
+        sidebar_layout.addWidget(QLabel("Merge PDF", objectName="SidebarTitle"))
+        self.count_label = QLabel()
+        self.count_label.setObjectName("SidebarStatLabel")
+        sidebar_layout.addWidget(self.count_label)
+        hint_label = QLabel(
+            "Tip: Drag cards to reorder before merging. Use + to add more files."
+        )
+        hint_label.setObjectName("SidebarHint")
+        hint_label.setWordWrap(True)
+        sidebar_layout.addWidget(hint_label)
+        sidebar_layout.addStretch()
         self.merge_btn = QPushButton("Merge PDF Now")
         self.merge_btn.setObjectName("MergeButton")
         self.merge_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.merge_btn.setMinimumHeight(60)
-        btn_layout = QHBoxLayout()
-        btn_layout.setContentsMargins(50, 0, 50, 0)
-        btn_layout.addWidget(self.merge_btn)
+        self.merge_btn.setMinimumHeight(PRIMARY_BUTTON_HEIGHT)
         self.merge_btn.clicked.connect(self.perform_merge)
-        main_layout.addLayout(btn_layout)
+        sidebar_layout.addWidget(self.merge_btn)
+        content_layout.addWidget(self.sidebar, stretch=0)
+        main_layout.addLayout(content_layout)
         self.update_title()
 
     def update_title(self):
         count = len(self.pdf_grid.get_items())
         self.title_label.setText(f"Selected {count} / {self.max_files} Files")
+        if hasattr(self, "count_label"):
+            self.count_label.setText(f"Files: {count} / {self.max_files}")
 
     def on_add_clicked(self):
         current_count = len(self.pdf_grid.get_items())
@@ -150,14 +162,9 @@ class MergePreviewWindow(BaseToolWindow):
         files_to_process = files[:slots_left]
         if not files_to_process:
             return
-        progress = QProgressDialog(
-            "Processing files...", "Cancel", 0, len(files_to_process), self
+        progress = create_progress_dialog(
+            self, "Please Wait", "Processing files...", len(files_to_process)
         )
-        progress.setWindowTitle("Please Wait")
-        progress.setWindowModality(Qt.WindowModality.WindowModal)
-        progress.setMinimumDuration(0)
-        progress.setValue(0)
-        progress.show()
         items_to_add = []
         skipped_files = []
         for i, f in enumerate(files_to_process):
@@ -198,7 +205,6 @@ class MergePreviewWindow(BaseToolWindow):
             QMessageBox.warning(self, "No Files", "Please add files.")
             return
         files_to_merge = []
-
         for item in items:
             final_path = item["path"]
             if item.get("encrypted"):
@@ -250,18 +256,13 @@ class MergePreviewWindow(BaseToolWindow):
                 writer = PdfWriter()
                 for item in files_to_merge:
                     reader = PdfReader(item["path"])
-                    for page in reader.pages:
-                        if item["rotation"] != 0:
-                            page.rotate(item["rotation"])
-                        writer.add_page(page)
-                output_path = get_unique_filename(
-                    get_downloads_folder(), MERGED_OUTPUT_NAME
-                )
-                with open(output_path, "wb") as f:
-                    writer.write(f)
-                QMessageBox.information(self, "Success", f"Saved at: {output_path}")
-                open_file(output_path)
-                self.go_back()
+                    pages_indices = list(range(len(reader.pages)))
+                    rotations = {i: item["rotation"] for i in pages_indices}
+                    write_pdf_with_rotation(writer, reader, pages_indices, rotations)
+                if save_pdf_with_success(
+                    writer, MERGED_OUTPUT_NAME, self, f"Saved at Downloads folder"
+                ):
+                    self.go_back()
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
             finally:

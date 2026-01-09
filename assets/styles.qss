@@ -1,0 +1,478 @@
+/* ==========================================================================
+   1. GLOBAL & SHARED STYLES
+   ========================================================================== */
+
+/* Main Font & Reset */
+QWidget {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color: #212529;
+    outline: none;
+}
+
+/* Scrollbars (Unified for Dashboard & Tools) */
+QScrollArea {
+    background-color: transparent;
+    border: none;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #c0c0c0;
+    min-height: 20px;
+    border-radius: 5px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #a0a0a0;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Inputs (Global) */
+QLineEdit, QSpinBox, QDoubleSpinBox {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    selection-background-color: #0d6efd;
+}
+
+QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+    border: 2px solid #86b7fe;
+    background-color: #ffffff;
+}
+
+/* ==========================================================================
+   2. DASHBOARD (MAIN MENU)
+   ========================================================================== */
+
+QWidget#DashboardWindow {
+    background-color: #F0F2F5;
+}
+
+QLabel#DashboardTitle {
+    color: #1A1A1B;
+    font-size: 32px;
+    font-weight: 800;
+    margin-top: 20px;
+}
+
+QLabel#DashboardSubtitle {
+    color: #65676B;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* Tool Cards in Dashboard */
+QFrame#ToolCard {
+    background-color: #FFFFFF;
+    border: 1px solid #E4E6EB;
+    border-radius: 20px;
+}
+
+QFrame#ToolCard:hover {
+    border: 2px solid #0084FF;
+    background-color: #F7F8FA;
+}
+
+QLabel#ToolIcon {
+    margin-top: 10px;
+    /* Font size handled by code/image, but fallback here */
+    font-size: 48px; 
+}
+
+QLabel#ToolName {
+    font-size: 20px;
+    font-weight: bold;
+    color: #050505;
+}
+
+QLabel#ToolDesc {
+    font-size: 13px;
+    color: #65676B;
+    padding: 0 15px;
+}
+
+QPushButton#LaunchButton {
+    background-color: #00d9ff; /* Bright Cyan */
+    color: black;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 20px;
+    padding: 12px;
+    margin: 10px;
+    border: none;
+}
+
+QPushButton#LaunchButton:hover {
+    background-color: #0073E1; /* Darker Blue on hover */
+    color: white;
+}
+
+QPushButton#LaunchButton:disabled {
+    background-color: #E4E6EB;
+    color: #B0B3B8;
+}
+
+/* ==========================================================================
+   3. TOOLS WINDOWS (Merge, Split, Delete)
+   ========================================================================== */
+
+/* Main Backgrounds */
+QWidget#MainWindow, QWidget#MergePreviewWindow, QWidget#SplitPDFWindow, QDialog {
+    background-color: #ffffff;
+}
+
+/* Headers & Navigation */
+QPushButton#BackButton {
+    background-color: transparent;
+    color: #0eb4ca;
+    font-size: 20px;
+    font-weight: bold;
+    border: none;
+    padding-left: 5px;
+    min-width: 120px;
+    min-height: 40px;
+}
+
+QPushButton#BackButton:hover {
+    color: #0073E1;
+}
+
+QLabel#MergeTitle, QLabel#DialogTitle {
+    color: #333333;
+    font-size: 20pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* ==========================================================================
+   4. FILE PICKER & DRAG OVERLAY
+   ========================================================================== */
+
+QLabel#InstructionLabel {
+    color: #666666;
+    font-size: 10pt;
+    border: 2px dashed #cccccc;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+QPushButton#SelectButton {
+    background-color: #00dff8;
+    color: black;
+    font-size: 14pt;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+}
+
+QPushButton#SelectButton:hover {
+    background-color: #a1eaf2;
+}
+
+QLabel#Overlay {
+    background-color: rgba(30, 30, 30, 200);
+    color: white;
+    font-size: 22pt;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   5. PDF GRID & CARDS (Merge/Delete Views)
+   ========================================================================== */
+
+QFrame#FileCardFrame {
+    background-color: white;
+    border: 2px solid #555555;
+    border-radius: 8px;
+}
+
+/* Placeholder state during drag */
+QFrame#FileCardFrame[placeholder="true"] {
+    background-color: #f8f9fa;
+    border: 2px dashed #dc3545;
+}
+
+QLabel#NumberLabel {
+    color: white;
+    background-color: #dc3545; /* Bootstrap Red */
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+QLabel#CardImage {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+}
+
+QLabel#CardName {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333333;
+    background: transparent;
+}
+
+/* Card Buttons (Delete/Rotate) */
+QPushButton#DeleteButton {
+    background-color: rgba(220, 53, 69, 0.9);
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    border-radius: 15px;
+    border: 2px solid white;
+}
+
+QPushButton#DeleteButton:hover {
+    background-color: rgba(255, 0, 0, 1);
+}
+
+QPushButton#RotateButton {
+    background-color: rgba(23, 162, 184, 0.9);
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    border-radius: 15px;
+    border: 2px solid white;
+    padding-bottom: 3px;
+}
+
+QPushButton#RotateButton:hover {
+    background-color: rgba(0, 180, 210, 1);
+}
+
+/* ==========================================================================
+   6. ACTION BUTTONS (Bottom Bars)
+   ========================================================================== */
+
+/* Add Button (+) */
+QPushButton#AddButton {
+    background-color: white;
+    color: #dc3545;
+    font-size: 30px;
+    font-weight: bold;
+    border: 2px solid #333;
+    border-radius: 20px;
+    padding-bottom: 5px;
+}
+
+QPushButton#AddButton:hover {
+    background-color: #f0f0f0;
+}
+
+/* Primary Action Buttons (Merge, Split, Save) */
+QPushButton#MergeButton, QPushButton#SplitActionBtn, QPushButton#SendButton {
+    background-color: #28a745; /* Green */
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 12px 20px;
+    border: none;
+}
+
+QPushButton#MergeButton:hover, QPushButton#SplitActionBtn:hover, QPushButton#SendButton:hover {
+    background-color: #218838;
+}
+
+QPushButton#SplitActionBtn:disabled {
+    background-color: #e2e6ea;
+    color: #adb5bd;
+}
+
+/* Specific red/blue buttons if needed */
+QPushButton#SendButton {
+    background-color: #e74c3c; /* Red variant */
+}
+QPushButton#SendButton:hover {
+    background-color: #c0392b;
+}
+
+/* ==========================================================================
+   7. DELETE PAGES SPECIFIC
+   ========================================================================== */
+
+QPushButton#ParityButton {
+    background-color: white;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    color: #555555;
+}
+
+QPushButton#ParityButton:hover {
+    background-color: #f0f8ff;
+    border: 1px solid #007bff;
+    color: #007bff;
+}
+
+QPushButton#ParityButton:pressed {
+    background-color: #e6f2ff;
+}
+
+/* ==========================================================================
+   8. SPLIT PDF SIDEBAR
+   ========================================================================== */
+
+QWidget#Sidebar {
+    background-color: #ffffff;
+    border-left: 1px solid #e0e0e0;
+}
+
+QLabel#SidebarTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* Mode Buttons (Range, Pages, Size) */
+QToolButton#ModeButton {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 10px;
+    color: #5f6368;
+    font-weight: bold;
+    font-size: 14px;
+    qproperty-toolButtonStyle: ToolButtonTextUnderIcon;
+}
+
+QToolButton#ModeButton:checked {
+    background-color: #f0f8ff;
+    border: 2px solid #007bff; /* Blue Highlight */
+    color: #007bff;
+}
+
+QToolButton#ModeButton:hover {
+    background-color: #f8f9fa;
+    border-color: #b0b0b0;
+}
+
+/* Range Tabs (Custom/Fixed) */
+QPushButton[class="RangeTypeBtn"] {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    color: #666;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QPushButton[class="RangeTypeBtn"]:checked {
+    background-color: #ffffff;
+    border: 2px solid #dc3545; /* Red Highlight like in image */
+    color: #dc3545;
+}
+
+QPushButton[class="RangeTypeBtn"]:hover {
+    background-color: #ffffff;
+    border-color: #ccc;
+}
+
+/* Scroll Area for Ranges */
+QScrollArea#SidebarScroll {
+    border: none;
+    background-color: transparent;
+}
+
+/* Input Group Container (from/to) */
+QFrame[class="InputGroup"] {
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    background-color: white;
+    min-height: 40px;
+}
+
+QFrame[class="InputGroup"] QLabel {
+    background-color: #f8f9fa;
+    color: #495057;
+    font-size: 13px;
+    padding: 0 12px;
+    border: none;
+    border-right: 1px solid #ced4da;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+QFrame[class="InputGroup"] QSpinBox {
+    border: none;
+    background: transparent;
+    font-weight: bold;
+    font-size: 15px;
+    padding-left: 10px;
+}
+
+/* Range Row Card */
+QFrame[class="RangeRowCard"] {
+    background-color: #f8f9fc;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+QLabel[class="RangeRowTitle"] {
+    font-weight: bold;
+    color: #495057;
+    font-size: 13px;
+}
+
+/* Buttons inside Range Row */
+QPushButton[class="RemoveRangeBtn"] {
+    background-color: transparent;
+    border: none;
+    color: #adb5bd;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+QPushButton[class="RemoveRangeBtn"]:hover {
+    color: #dc3545;
+}
+
+/* Add Range Button */
+QPushButton#AddRangeBtn {
+    background-color: white;
+    border: 1px dashed #007bff;
+    color: #007bff;
+    font-size: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+QPushButton#AddRangeBtn:hover {
+    background-color: #f0f7ff;
+    border-style: solid;
+}
+
+/* Visual Range Group in Preview */
+QFrame#RangeGroup {
+    background-color: white;
+    border: 2px dashed #cccccc;
+    border-radius: 12px;
+}
+
+QFrame#RangeGroup:hover {
+    border-color: #007bff;
+    background-color: #fdfdfd;
+}
+
+QLabel#GroupTitle {
+    font-weight: bold;
+    color: #007bff;
+    font-size: 13px;
+}

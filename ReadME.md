@@ -51,8 +51,10 @@ ReadME.md                       # This file
 
 1. **Clone the repository**:
 
+   ```bash
    git clone https://github.com/guyGojanski/PDF_Tools.git
    cd PDF_Tools
+   ```
 
 2. **Create a virtual environment** (recommended):
 
@@ -88,18 +90,6 @@ See `requirements.txt` for complete list with versions.
 
 ---
 
-## 🎨 UI/UX Features
-
-- **Dark-themed stylesheet** with modern button and input styles
-- **Real-time preview** of PDF pages with thumbnails
-- **Drag-and-drop** support for file selection
-- **Password-protected PDF** handling with decryption dialogs
-- **Progress indicators** for file operations
-- **Responsive layout** that adapts to window resizing
-- **Size estimation** for split operations
-
----
-
 ## 🧪 Testing
 
 Run the test suite with coverage:
@@ -116,14 +106,6 @@ Tests include:
 - Filename truncation
 - Rotation calculations
 - PDF cleanup resilience
-
----
-
-## 📝 Recent Updates
-
-- **Code cleanup**: Removed unused imports from all modules
-- **Import optimization**: Streamlined dependencies across DeletePages, MergePDF, and SplitPDF
-- **Refactored SplitPDF**: Centralized UI helpers and improved range handling
 
 ---
 

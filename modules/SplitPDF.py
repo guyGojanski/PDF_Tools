@@ -1,6 +1,5 @@
 import io
 import os
-import re
 import fitz
 from typing import List, Tuple
 from pypdf import PdfWriter, PdfReader
@@ -23,31 +22,31 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QVBoxLayout,
     QWidget,
+    QSizePolicy,
+    QToolButton,
 )
 from PyQt6.QtCore import Qt, QSize, QTimer
 from PyQt6.QtGui import QIcon
 from component.header_bar import HeaderBar
-from component.toolsForPDF import (
-    BaseToolWindow,
-    button_operation,
-    cleanup_temp_folder,
-    get_downloads_folder,
-    get_pdf_thumbnail,
-    get_unique_filename,
-)
-from assets.config import SPLIT_HEADER_TITLE
+from component.toolsForPDF import *
+from assets.config import *
 
 
 class RangeGroupWidget(QFrame):
     def __init__(
-        self, file_path: str, start_page: int, end_page: int, group_index: int
+        self,
+        file_path: str,
+        start_page: int,
+        end_page: int,
+        group_index: int,
+        est_size: str = None,
     ):
         super().__init__()
         self.setObjectName("RangeGroup")
-        self.setFixedSize(240, 190)
+        self.setFixedSize(RANGE_GROUP_SIZE, RANGE_GROUP_SIZE)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(8)
+        layout.setSpacing(5)
 
         title_label = QLabel(f"Range {group_index}")
         title_label.setObjectName("GroupTitle")
@@ -72,12 +71,20 @@ class RangeGroupWidget(QFrame):
         pages_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(pages_label)
 
+        if est_size:
+            size_label = QLabel(f"Est. {est_size}")
+            size_label.setObjectName("SizeEstimate")
+            size_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(size_label)
+
     def _create_thumb(self, file_path: str, page_num: int) -> QLabel:
         lbl = QLabel()
         lbl.setObjectName("PageThumb")
-        lbl.setFixedSize(70, 92)
+        lbl.setFixedSize(PAGE_THUMB_WIDTH, PAGE_THUMB_HEIGHT)
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pix = get_pdf_thumbnail(file_path, page_num, width=70, height=92)
+        pix = get_pdf_thumbnail(
+            file_path, page_num, width=PAGE_THUMB_WIDTH, height=PAGE_THUMB_HEIGHT
+        )
         if pix:
             lbl.setPixmap(pix)
         else:
@@ -92,9 +99,10 @@ class SplitPDFWindow(BaseToolWindow):
         self.doc = fitz.open(file_path)
         self.total_pages = len(self.doc)
         self.file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        self.page_choices = [str(i) for i in range(1, self.total_pages + 1)]
 
         self.ranges_to_split: List[Tuple[int, int]] = []
-        self.custom_rows: List[Tuple[QSpinBox, QSpinBox]] = []
+        self.custom_rows: List[Tuple[QComboBox, QComboBox]] = []
 
         self._init_ui()
 
@@ -128,13 +136,18 @@ class SplitPDFWindow(BaseToolWindow):
             Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft
         )
         self.scroll_area.setWidget(self.grid_container)
-        content_layout.addWidget(self.scroll_area, stretch=7)
+
+        # stretch=1 נותן ל-ScrollArea השמאלי לתפוס את רוב המקום
+        content_layout.addWidget(self.scroll_area, stretch=1)
 
         # --- Sidebar ---
         self.sidebar = QWidget()
         self.sidebar.setObjectName("Sidebar")
-        self.sidebar.setFixedWidth(460)
-        # תוקן: הסרנו את ה-setFixedHeight כדי שהסרגל ימתח לכל הגובה
+        self.sidebar.setFixedWidth(SIDEBAR_WIDTH_SPLIT)
+        # מדיניות גודל: קבוע ברוחב, מתרחב בגובה
+        self.sidebar.setSizePolicy(
+            QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
+        )
 
         sidebar_layout = QVBoxLayout(self.sidebar)
         sidebar_layout.setSpacing(18)
@@ -154,14 +167,15 @@ class SplitPDFWindow(BaseToolWindow):
         ]
 
         for i, (text, icon_path) in enumerate(modes):
-            btn = QPushButton(text)
+            btn = QToolButton()
+            btn.setText(text)
             btn.setObjectName("ModeButton")
             btn.setCheckable(True)
-            btn.setMinimumHeight(80)
-
-            # טעינת האייקון
+            btn.setMinimumHeight(MODE_BUTTON_HEIGHT)
+            btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             btn.setIcon(QIcon(icon_path))
-            btn.setIconSize(QSize(40, 40))
+            btn.setIconSize(QSize(42, 42))
+            btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
 
             btn.clicked.connect(lambda _, idx=i: self.change_mode(idx))
             self.mode_group.addButton(btn, i)
@@ -175,16 +189,18 @@ class SplitPDFWindow(BaseToolWindow):
         self.sidebar_stack.addWidget(self._create_size_ui())
         sidebar_layout.addWidget(self.sidebar_stack)
 
-        sidebar_layout.addStretch()  # זה דוחף הכל למעלה
+        sidebar_layout.addStretch()
 
         self.split_btn = QPushButton("Split PDF")
         self.split_btn.setObjectName("MergeButton")
         self.split_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.split_btn.setMinimumHeight(52)
+        self.split_btn.setMinimumHeight(PRIMARY_BUTTON_HEIGHT)
         self.split_btn.clicked.connect(self.perform_split)
         sidebar_layout.addWidget(self.split_btn)
 
-        content_layout.addWidget(self.sidebar)
+        # הוספת הסרגל ללא stretch (לוקח רק את הרוחב הקבוע שלו)
+        content_layout.addWidget(self.sidebar, stretch=0)
+
         main_layout.addLayout(content_layout)
 
     def _create_range_ui(self) -> QWidget:
@@ -228,14 +244,17 @@ class SplitPDFWindow(BaseToolWindow):
         custom_layout.setContentsMargins(0, 5, 0, 0)
         custom_layout.setSpacing(10)
 
-        # א. אזור הגלילה (מכיל רק את השורות)
+        # א. אזור הגלילה
         self.range_scroll = QScrollArea()
         self.range_scroll.setWidgetResizable(True)
         self.range_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.range_scroll.setObjectName("SidebarScroll")
-        # גובה התחלתי קטן, נעדכן אותו דינמית
-        self.range_scroll.setMinimumHeight(100)
-        self.range_scroll.setMaximumHeight(500)
+
+        # מתחילים מגובה 0, ללא מגבלה קבועה מראש (היא תחושב דינמית)
+        self.range_scroll.setMinimumHeight(0)
+        self.range_scroll.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
 
         self.range_scroll_content = QWidget()
         self.range_scroll_content.setObjectName("ScrollContent")
@@ -268,7 +287,7 @@ class SplitPDFWindow(BaseToolWindow):
 
         custom_layout.addLayout(fixed_bottom_area)
 
-        # זה חשוב: דוחף את כל האלמנטים למעלה, צמוד לראש
+        # זה חשוב: דוחף את כל הגוש (גלילה+כפתורים) למעלה
         custom_layout.addStretch()
 
         self.range_tabs.addWidget(custom_widget)
@@ -293,21 +312,58 @@ class SplitPDFWindow(BaseToolWindow):
         """פונקציה חכמה לחישוב גובה הגלילה"""
         if not hasattr(self, "range_scroll_content"):
             return
-
-        # מחשבים את הגובה הרצוי לפי התוכן
         # נותנים למערכת רגע להתעדכן לפני החישוב
-        QTimer.singleShot(10, self._perform_resize)
+        QTimer.singleShot(0, self._perform_resize)
 
     def _perform_resize(self):
-        content_height = self.range_scroll_content.sizeHint().height()
-        # מוסיפים קצת "אוויר" שלא יחתוך
-        new_height = content_height + 10
-        # מגבילים למקסימום 500 פיקסלים
-        final_height = min(new_height, 500)
-        # אם יש מעט שורות, הגובה יהיה נמוך. אם יש הרבה, הוא יעצור ב-500.
+        if not self.range_scroll_content.layout():
+            return
+
+        # 1. חישוב גובה התוכן האמיתי (כמה מקום השורות תופסות)
+        content_height = self.range_scroll_content.layout().sizeHint().height()
+        current_sidebar_height = self.sidebar.height()
+        max_allowed_height = int(current_sidebar_height * 0.40)
+
+        max_allowed_height = max(max_allowed_height, 150)
+
+        final_height = min(content_height + 10, max_allowed_height)
+
         self.range_scroll.setFixedHeight(final_height)
 
-    def _create_input_group(self, label_text: str, spinbox: QSpinBox) -> QFrame:
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if hasattr(self, "ranges_to_split") and self.ranges_to_split:
+            self.reflow_grid()
+        self._adjust_scroll_height()
+
+    def reflow_grid(self):
+        if not self.scroll_area.viewport():
+            return
+        available_width = self.scroll_area.viewport().width() - 40
+        if available_width <= 0:
+            return
+
+        card_width = RANGE_GROUP_SIZE + 15
+        cols = max(1, available_width // card_width)
+
+        while self.grid_layout.count():
+            item = self.grid_layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+
+        avg_page_mb = self.file_size_mb / self.total_pages if self.total_pages else 0
+        for idx, (start, end) in enumerate(self.ranges_to_split):
+            num_pages = end - start + 1
+            estimated_size = num_pages * avg_page_mb
+            size_str = f"{estimated_size:.2f} MB"
+            widget = RangeGroupWidget(
+                self.file_path, start, end, idx + 1, est_size=size_str
+            )
+            row = idx // cols
+            col = idx % cols
+            self.grid_layout.addWidget(widget, row, col)
+
+    def _create_input_group(self, label_text: str, widget) -> QFrame:
         frame = QFrame()
         frame.setProperty("class", "InputGroup")
         layout = QHBoxLayout(frame)
@@ -317,14 +373,46 @@ class SplitPDFWindow(BaseToolWindow):
         label = QLabel(label_text)
         layout.addWidget(label)
 
-        spinbox.setProperty("class", "RangeSpin")
-        layout.addWidget(spinbox)
+        widget.setProperty("class", "RangeSpin")
+        layout.addWidget(widget)
 
         return frame
 
-    def add_range_row(self, start: int = 1, end: int = None) -> None:
+    def _combo_value(self, combo: QComboBox) -> int:
+        try:
+            return int(combo.currentText() or 0)
+        except ValueError:
+            return 0
+
+    def _make_page_combo(self, value: int) -> QComboBox:
+        combo = QComboBox()
+        combo.addItems(self.page_choices)
+        bounded_value = min(max(1, value), self.total_pages)
+        combo.setCurrentText(str(bounded_value))
+        combo.setProperty("class", "RangeSpin")
+        return combo
+
+    def _wire_range_combo(self, start_combo: QComboBox, end_combo: QComboBox) -> None:
+        start_combo.currentTextChanged.connect(
+            lambda _: self._sync_range(start_combo, end_combo)
+        )
+        end_combo.currentTextChanged.connect(
+            lambda _: self._sync_range(start_combo, end_combo)
+        )
+        start_combo.currentTextChanged.connect(lambda _: self.update_preview())
+        end_combo.currentTextChanged.connect(lambda _: self.update_preview())
+
+    def add_range_row(self, start=None, end=None) -> None:
+        if start is None:
+            if self.custom_rows:
+                _, last_end = self.custom_rows[-1]
+                start = min(int(last_end.currentText()) + 1, self.total_pages)
+            else:
+                start = 1
         if end is None:
             end = self.total_pages
+        if start > end:
+            end = start
 
         row_index = len(self.custom_rows) + 1
 
@@ -352,20 +440,9 @@ class SplitPDFWindow(BaseToolWindow):
         inputs_layout = QHBoxLayout()
         inputs_layout.setSpacing(10)
 
-        start_spin = QSpinBox()
-        start_spin.setRange(1, self.total_pages)
-        start_spin.setValue(start)
-
-        end_spin = QSpinBox()
-        end_spin.setRange(1, self.total_pages)
-        end_spin.setValue(min(end, self.total_pages))
-
-        start_spin.valueChanged.connect(
-            lambda _: self._sync_range(start_spin, end_spin)
-        )
-        end_spin.valueChanged.connect(lambda _: self._sync_range(start_spin, end_spin))
-        start_spin.valueChanged.connect(self.update_preview)
-        end_spin.valueChanged.connect(self.update_preview)
+        start_spin = self._make_page_combo(start)
+        end_spin = self._make_page_combo(min(end, self.total_pages))
+        self._wire_range_combo(start_spin, end_spin)
 
         from_group = self._create_input_group("from page", start_spin)
         to_group = self._create_input_group("to", end_spin)
@@ -408,9 +485,9 @@ class SplitPDFWindow(BaseToolWindow):
             # עדכון גובה הגלילה
             self._adjust_scroll_height()
 
-    def _sync_range(self, start_spin: QSpinBox, end_spin: QSpinBox) -> None:
-        if start_spin.value() > end_spin.value():
-            end_spin.setValue(start_spin.value())
+    def _sync_range(self, start_spin, end_spin) -> None:
+        if self._combo_value(start_spin) > self._combo_value(end_spin):
+            end_spin.setCurrentText(start_spin.currentText())
 
     def _set_range_mode(self, custom: bool) -> None:
         if custom and not self.custom_rows:
@@ -439,8 +516,15 @@ class SplitPDFWindow(BaseToolWindow):
         self.pages_input = QLineEdit()
         self.pages_input.setPlaceholderText("e.g. 1, 3, 5-8")
         self.pages_input.setEnabled(False)
+        self.pages_input.setVisible(False)
         self.pages_input.textChanged.connect(self.update_preview)
         self.rb_select_pages.toggled.connect(self.pages_input.setEnabled)
+        self.rb_extract_all.toggled.connect(
+            lambda checked: self.pages_input.setVisible(not checked)
+        )
+        self.rb_select_pages.toggled.connect(
+            lambda checked: self.pages_input.setVisible(checked)
+        )
 
         layout.addWidget(self.rb_extract_all)
         layout.addWidget(self.rb_select_pages)
@@ -457,10 +541,11 @@ class SplitPDFWindow(BaseToolWindow):
         )
         info_label.setObjectName("SizeInfoLabel")
         layout.addWidget(info_label)
-        layout.addWidget(QLabel("Max size per file:"))
 
-        size_input_layout = QHBoxLayout()
-        size_input_layout.setSpacing(8)
+        size_input_row = QWidget()
+        size_input_layout = QHBoxLayout(size_input_row)
+        size_input_layout.setContentsMargins(0, 0, 0, 0)
+        size_input_layout.setSpacing(6)
         self.size_spin = QDoubleSpinBox()
         self.size_spin.setRange(0.1, 9999)
         self.size_spin.setValue(1.0)
@@ -468,10 +553,11 @@ class SplitPDFWindow(BaseToolWindow):
         self.unit_combo = QComboBox()
         self.unit_combo.addItems(["MB", "KB"])
         self.unit_combo.currentIndexChanged.connect(self.update_preview)
+        self.size_spin.setProperty("class", "RangeSpin")
+        self.unit_combo.setProperty("class", "RangeSpin")
         size_input_layout.addWidget(self.size_spin)
         size_input_layout.addWidget(self.unit_combo)
-        layout.addLayout(size_input_layout)
-        layout.addWidget(QLabel("* Preview uses average page size approximation"))
+        layout.addWidget(self._create_input_group("Max size per file", size_input_row))
         layout.addStretch()
         return widget
 
@@ -488,7 +574,7 @@ class SplitPDFWindow(BaseToolWindow):
             ]
         ranges: List[Tuple[int, int]] = []
         for start_spin, end_spin in self.custom_rows:
-            s, e = start_spin.value(), end_spin.value()
+            s, e = self._combo_value(start_spin), self._combo_value(end_spin)
             if s <= e:
                 ranges.append((s - 1, e - 1))
         return ranges
@@ -496,7 +582,7 @@ class SplitPDFWindow(BaseToolWindow):
     def _collect_ranges_pages_mode(self) -> List[Tuple[int, int]]:
         if self.rb_extract_all.isChecked():
             return [(i, i) for i in range(self.total_pages)]
-        pages = self._parse_page_list(self.pages_input.text())
+        pages = parse_page_ranges(self.pages_input.text(), self.total_pages)
         return [(p, p) for p in pages]
 
     def _collect_ranges_size_mode(self) -> List[Tuple[int, int]]:
@@ -511,10 +597,8 @@ class SplitPDFWindow(BaseToolWindow):
         ]
 
     def update_preview(self) -> None:
-        while self.grid_layout.count():
-            item = self.grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        # פונקציית העזר reflow_grid כבר מטפלת בניקוי והוספה מחדש
+        # אנחנו רק צריכים לעדכן את הרשימה הלוגית
         mode = self.mode_group.checkedId()
         if mode == 0:
             self.ranges_to_split = self._collect_ranges_range_mode()
@@ -525,10 +609,7 @@ class SplitPDFWindow(BaseToolWindow):
         else:
             self.ranges_to_split = []
 
-        cols = 3
-        for idx, (start, end) in enumerate(self.ranges_to_split):
-            widget = RangeGroupWidget(self.file_path, start, end, idx + 1)
-            self.grid_layout.addWidget(widget, idx // cols, idx % cols)
+        self.reflow_grid()
 
         enabled = len(self.ranges_to_split) > 0
         self.split_btn.setEnabled(enabled)
@@ -536,29 +617,6 @@ class SplitPDFWindow(BaseToolWindow):
             self.split_btn.setText(f"Split into {len(self.ranges_to_split)} Files")
         else:
             self.split_btn.setText("Split PDF")
-
-    def _parse_page_list(self, text: str) -> List[int]:
-        pages: List[int] = []
-        cleaned = re.sub(r"[^0-9,\-]", "", text or "")
-        for part in cleaned.split(","):
-            if not part:
-                continue
-            if "-" in part:
-                try:
-                    start_str, end_str = part.split("-", 1)
-                    s, e = int(start_str), int(end_str)
-                    if 1 <= s <= e <= self.total_pages:
-                        pages.extend(range(s - 1, e))
-                except ValueError:
-                    continue
-            else:
-                try:
-                    p = int(part)
-                    if 1 <= p <= self.total_pages:
-                        pages.append(p - 1)
-                except ValueError:
-                    continue
-        return sorted(list(dict.fromkeys(pages)))
 
     def perform_split(self) -> None:
         if not self.ranges_to_split:

@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt, pyqtSignal
+from assets.config import *
 
 
 class HeaderBar(QWidget):
@@ -7,20 +8,20 @@ class HeaderBar(QWidget):
 
     def __init__(self, title, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(70)
+        self.setFixedHeight(HEADER_BAR_HEIGHT)
         self._init_ui(title)
 
     def _init_ui(self, title):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(20, 0, 20, 0)
-        self.back_btn = QPushButton("menu")
-        self.back_btn.setObjectName("BackButton")
-        self.back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.back_btn.setFixedSize(50, 50)
-        self.back_btn.clicked.connect(self.back_clicked.emit)
+        self.back_button = QPushButton("menu")
+        self.back_button.setObjectName("BackButton")
+        self.back_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.back_button.setFixedSize(BACK_BUTTON_SIZE, BACK_BUTTON_SIZE)
+        self.back_button.clicked.connect(self.back_clicked.emit)
         self.title_label = QLabel(title)
         self.title_label.setObjectName("MergeTitle")
-        layout.addWidget(self.back_btn)
+        layout.addWidget(self.back_button)
         layout.addStretch()
         layout.addWidget(self.title_label)
         layout.addStretch()

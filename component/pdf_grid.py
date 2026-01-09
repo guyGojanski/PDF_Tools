@@ -7,13 +7,22 @@ from component.toolsForPDF import calculate_rotation
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
 
-    def __init__(self, initial_items=None, max_items=None, on_delete_callback=None):
+    def __init__(
+        self,
+        initial_items=None,
+        max_items=None,
+        on_delete_callback=None,
+        click_to_toggle: bool = False,
+        drag_enabled: bool = True,
+    ):
         super().__init__()
         self.items = initial_items if initial_items else []
         self.max_items = max_items
         self.dragged_item_data = None
         self.on_delete_callback = on_delete_callback
-        self.setAcceptDrops(True)
+        self.click_to_toggle = click_to_toggle
+        self.drag_enabled = drag_enabled
+        self.setAcceptDrops(self.drag_enabled)
         self.active_cards = {}
         self._init_ui()
 
@@ -110,7 +119,9 @@ class PDFGrid(QWidget):
             current_active_ids.add(item_id)
             card = self.active_cards.get(item_id)
             if not card:
-                card = FileCard(item_data, index=i + 1)
+                card = FileCard(
+                    item_data, index=i + 1, click_to_toggle=self.click_to_toggle
+                )
                 card.delete_requested.connect(
                     lambda d=item_data: self.handle_delete_action(d)
                 )
@@ -139,6 +150,9 @@ class PDFGrid(QWidget):
         return self.active_cards.get(id(item_data))
 
     def dragEnterEvent(self, event):
+        if not self.drag_enabled:
+            event.ignore()
+            return
         if event.mimeData().hasText():
             event.accept()
             path = event.mimeData().text()
@@ -151,6 +165,9 @@ class PDFGrid(QWidget):
             event.ignore()
 
     def dragMoveEvent(self, event):
+        if not self.drag_enabled:
+            event.ignore()
+            return
         event.accept()
         if not self.dragged_item_data:
             return
@@ -166,7 +183,6 @@ class PDFGrid(QWidget):
                 current_index = self.items.index(self.dragged_item_data)
                 target_item_data = target_card.item_data
                 target_index = self.items.index(target_item_data)
-
                 if current_index != target_index:
                     item = self.items.pop(current_index)
                     self.items.insert(target_index, item)
@@ -176,6 +192,9 @@ class PDFGrid(QWidget):
                 pass
 
     def dropEvent(self, event):
+        if not self.drag_enabled:
+            event.ignore()
+            return
         self.dragged_item_data = None
         self.refresh_grid_visuals()
         event.accept()

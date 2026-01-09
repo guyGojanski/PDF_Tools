@@ -7,26 +7,28 @@ from component.toolsForPDF import (
     calculate_rotation,
     truncate_filename,
 )
+from assets.config import *
 
 
 class FileCard(QFrame):
     delete_requested = pyqtSignal(object)
     rotate_requested = pyqtSignal(object)
 
-    def __init__(self, item_data, index=0):
+    def __init__(self, item_data, index=0, click_to_toggle: bool = False):
         super().__init__()
-        self.setFixedSize(160, 220)
+        self.setFixedSize(FILE_CARD_WIDTH, FILE_CARD_HEIGHT)
         self.item_data = item_data
         self.file_path = item_data["path"]
         self.rotation_angle = item_data.get("rotation", 0)
         self.page_num = item_data.get("page", 0)
         self.is_encrypted = item_data.get("encrypted", False)
+        self.click_to_toggle = click_to_toggle
         self.setObjectName("FileCardFrame")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.number_label = QLabel(str(index), self)
         self.number_label.setObjectName("NumberLabel")
         self.number_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.number_label.setFixedSize(24, 24)
+        self.number_label.setFixedSize(CARD_NUMBER_LABEL_SIZE, CARD_NUMBER_LABEL_SIZE)
         self.number_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.number_label.show()
         self.layout = QVBoxLayout(self)
@@ -45,7 +47,7 @@ class FileCard(QFrame):
         self.name_label.setObjectName("CardName")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.name_label.setWordWrap(True)
-        self.name_label.setFixedHeight(30)
+        self.name_label.setFixedHeight(CARD_NAME_LABEL_HEIGHT)
         self.name_label.setToolTip(file_name)
         self.layout.addWidget(self.name_label)
         self.overlay_label = QLabel("", self)
@@ -53,19 +55,28 @@ class FileCard(QFrame):
         self.overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.overlay_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.overlay_label.hide()
-        self.delete_btn = QPushButton("X", self)
-        self.delete_btn.setObjectName("DeleteButton")
-        self.delete_btn.setFixedSize(30, 30)
-        self.delete_btn.hide()
-        self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.delete_btn.clicked.connect(self.on_delete_clicked)
-        self.rotate_btn = QPushButton("⟲", self)
-        self.rotate_btn.setObjectName("RotateButton")
-        self.rotate_btn.setFixedSize(30, 30)
-        self.rotate_btn.hide()
-        self.rotate_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.rotate_btn.clicked.connect(self.on_rotate_clicked)
-        self.rotate_btn.setToolTip("Rotate 90° Left")
+        self.delete_button = QPushButton("X", self)
+        self.delete_button.setObjectName("DeleteButton")
+        self.delete_button.setFixedSize(
+            CARD_ACTION_BUTTON_SIZE, CARD_ACTION_BUTTON_SIZE
+        )
+        self.delete_button.hide()
+        self.delete_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.delete_button.clicked.connect(self.on_delete_clicked)
+        self.rotate_button = QPushButton("⟲", self)
+        self.rotate_button.setObjectName("RotateButton")
+        self.rotate_button.setFixedSize(
+            CARD_ACTION_BUTTON_SIZE, CARD_ACTION_BUTTON_SIZE
+        )
+        self.rotate_button.hide()
+        self.rotate_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.rotate_button.clicked.connect(self.on_rotate_clicked)
+        self.rotate_button.setToolTip("Rotate 90° Left")
+        if self.click_to_toggle:
+            self.delete_button.hide()
+            self.rotate_button.hide()
+            self.delete_button.setEnabled(False)
+            self.rotate_button.setEnabled(False)
         self.update_visuals()
 
     def set_number(self, num):
@@ -76,11 +87,11 @@ class FileCard(QFrame):
             self.image_label.setText("🔒")
             self.image_label.setObjectName("EncryptedIcon")
             self.setToolTip("Password required")
-            self.rotate_btn.setEnabled(False)
+            self.rotate_button.setEnabled(False)
         else:
             self.image_label.setStyleSheet("")
             self.setToolTip("")
-            self.rotate_btn.setEnabled(True)
+            self.rotate_button.setEnabled(True)
             self.generate_thumbnail()
 
     def generate_thumbnail(self):
@@ -93,6 +104,9 @@ class FileCard(QFrame):
             self.image_label.setText("📄")
 
     def mousePressEvent(self, event):
+        if self.click_to_toggle:
+            self.delete_requested.emit(self.item_data)
+            return
         if not self.overlay_label.isHidden():
             self.delete_requested.emit(self.item_data)
         else:
@@ -103,19 +117,21 @@ class FileCard(QFrame):
         self.overlay_label.setGeometry(0, 0, self.width(), self.height())
         center_x = self.width() // 2
         center_y = self.height() // 2
-        self.delete_btn.move(center_x + 5, center_y - 15)
-        self.rotate_btn.move(center_x - 35, center_y - 15)
+        self.delete_button.move(center_x + 5, center_y - 15)
+        self.rotate_button.move(center_x - 35, center_y - 15)
         self.number_label.move(5, 5)
 
     def enterEvent(self, event):
-        self.delete_btn.show()
-        if not self.is_encrypted:
-            self.rotate_btn.show()
+        if not self.click_to_toggle:
+            self.delete_button.show()
+            if not self.is_encrypted:
+                self.rotate_button.show()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        self.delete_btn.hide()
-        self.rotate_btn.hide()
+        if not self.click_to_toggle:
+            self.delete_button.hide()
+            self.rotate_button.hide()
         super().leaveEvent(event)
 
     def on_delete_clicked(self):
@@ -149,15 +165,17 @@ class FileCard(QFrame):
             self.image_label.hide()
             self.name_label.hide()
             self.number_label.hide()
-            self.delete_btn.hide()
-            self.rotate_btn.hide()
+            self.delete_button.hide()
+            self.rotate_button.hide()
         else:
             self.image_label.show()
             self.name_label.show()
             self.number_label.show()
 
     def mouseMoveEvent(self, e):
-        if self.delete_btn.underMouse() or self.rotate_btn.underMouse():
+        if self.click_to_toggle:
+            return
+        if self.delete_button.underMouse() or self.rotate_button.underMouse():
             return
         if e.buttons() == Qt.MouseButton.LeftButton:
             drag = QDrag(self)
@@ -166,8 +184,8 @@ class FileCard(QFrame):
             drag.setMimeData(mime)
             pixmap = QPixmap(self.size())
             self.set_placeholder(False)
-            self.delete_btn.hide()
-            self.rotate_btn.hide()
+            self.delete_button.hide()
+            self.rotate_button.hide()
             self.render(pixmap)
             drag.setPixmap(pixmap)
             drag.exec(Qt.DropAction.MoveAction)

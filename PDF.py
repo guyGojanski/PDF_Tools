@@ -1,5 +1,4 @@
 import sys
-from typing import Optional
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -13,7 +12,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap  # <--- הוספנו את QPixmap
+from PyQt6.QtGui import QPixmap
 from component.toolsForPDF import apply_stylesheet, cleanup_temp_folder
 from component.file_picker import get_files
 from modules.MergePDF import MergePreviewWindow
@@ -35,16 +34,11 @@ class ToolCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(12)
-
-        # === השינוי: טעינת תמונה ===
         self.icon_label = QLabel()
         self.icon_label.setObjectName("ToolIcon")
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # בדיקה אם זה קובץ PNG וטעינה שלו
         if icon_path and icon_path.endswith(".png"):
             pixmap = QPixmap(icon_path)
-            # הקטנת התמונה לגודל מתאים (למשל 64x64)
             scaled_pixmap = pixmap.scaled(
                 64,
                 64,
@@ -53,9 +47,7 @@ class ToolCard(QFrame):
             )
             self.icon_label.setPixmap(scaled_pixmap)
         else:
-            # Fallback למקרה שאין תמונה (טקסט/אימוג'י)
             self.icon_label.setText(icon_path if icon_path else "")
-
         self.name_label = QLabel(name)
         self.name_label.setObjectName("ToolName")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -63,26 +55,27 @@ class ToolCard(QFrame):
         self.desc_label.setObjectName("ToolDesc")
         self.desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.desc_label.setWordWrap(True)
-        self.btn = QPushButton("Start Working")
-        self.btn.setObjectName("LaunchButton")
-        self.btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.btn.clicked.connect(self.launch_tool)
+        self.launch_button = QPushButton("Start Working")
+        self.launch_button.setObjectName("LaunchButton")
+        self.launch_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.launch_button.clicked.connect(self.launch_tool)
         if not tool_type:
-            self.btn.setEnabled(False)
-            self.btn.setText("Coming Soon")
+            self.launch_button.setEnabled(False)
+            self.launch_button.setText("Coming Soon")
         layout.addWidget(self.icon_label)
         layout.addWidget(self.name_label)
         layout.addWidget(self.desc_label)
         layout.addStretch()
-        layout.addWidget(self.btn)
+        layout.addWidget(self.launch_button)
 
     def launch_tool(self) -> None:
-        if self.tool_type == "merge":
-            self.main_window.launch_merge_tool()
-        elif self.tool_type == "delete":
-            self.main_window.launch_delete_tool()
-        elif self.tool_type == "split":
-            self.main_window.launch_split_tool()
+        tool_map = {
+            "merge": self.main_window.launch_merge_tool,
+            "delete": self.main_window.launch_delete_tool,
+            "split": self.main_window.launch_split_tool,
+        }
+        if self.tool_type in tool_map:
+            tool_map[self.tool_type]()
 
 
 class DashboardWidget(QWidget):
@@ -179,16 +172,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle(MAIN_WINDOW_TITLE)
         self.setObjectName("DashboardWindow")
-        start_w = getattr(
-            sys.modules.get("assets.config"), "MAIN_WINDOW_START_WIDTH", 1200
-        )
-        start_h = getattr(
-            sys.modules.get("assets.config"), "MAIN_WINDOW_START_HEIGHT", 800
-        )
-        min_w = getattr(sys.modules.get("assets.config"), "MAIN_WINDOW_MIN_WIDTH", 900)
-        min_h = getattr(sys.modules.get("assets.config"), "MAIN_WINDOW_MIN_HEIGHT", 700)
-        self.resize(start_w, start_h)
-        self.setMinimumSize(min_w, min_h)
+        self.resize(MAIN_WINDOW_START_WIDTH, MAIN_WINDOW_START_HEIGHT)
+        self.setMinimumSize(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MIN_HEIGHT)
         apply_stylesheet(self, STYLESHEET)
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -196,13 +181,13 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.dashboard)
 
     def launch_merge_tool(self) -> None:
-        self._launch_tool_generic("merge", MERGE_MAX_FILES, MERGE_TEMP_FOLDER)
+        self._launch_tool_generic("merge", MAX_MERGE_FILES, MERGE_TEMP_FOLDER)
 
     def launch_delete_tool(self) -> None:
-        self._launch_tool_generic("delete", DELETE_MAX_FILES, DELETE_TEMP_FOLDER)
+        self._launch_tool_generic("delete", MAX_DELETE_FILES, DELETE_TEMP_FOLDER)
 
     def launch_split_tool(self) -> None:
-        self._launch_tool_generic("split", SPLIT_MAX_FILES, SPLIT_TEMP_FOLDER)
+        self._launch_tool_generic("split", MAX_SPLIT_FILES, SPLIT_TEMP_FOLDER)
 
     def _launch_tool_generic(
         self, tool_type: str, max_files: int, temp_folder: str
@@ -213,15 +198,14 @@ class MainWindow(QMainWindow):
             return
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         QApplication.processEvents()
-        tool = None
+        tool_map = {
+            "merge": lambda: MergePreviewWindow(files, temp_folder, max_files),
+            "delete": lambda: DeletePagesWindow(files[0], temp_folder),
+            "split": lambda: SplitPDFWindow(files[0], temp_folder),
+        }
         try:
-            if tool_type == "merge":
-                tool = MergePreviewWindow(files, temp_folder, max_files)
-            elif tool_type == "delete":
-                tool = DeletePagesWindow(files[0], temp_folder)
-            elif tool_type == "split":
-                tool = SplitPDFWindow(files[0], temp_folder)
-            if tool:
+            if tool_type in tool_map:
+                tool = tool_map[tool_type]()
                 tool.back_to_dashboard.connect(self.return_to_dashboard)
                 self.stack.addWidget(tool)
                 self.stack.setCurrentWidget(tool)

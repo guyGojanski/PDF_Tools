@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 from typing import List
 from PyQt6.QtWidgets import (
     QApplication,
@@ -13,15 +12,8 @@ from PyQt6.QtWidgets import (
     QProgressDialog,
 )
 from PyQt6.QtCore import Qt
-from component.toolsForPDF import (
-    get_downloads_folder,
-    apply_stylesheet,
-    safe_copy_file,
-    is_valid_pdf,
-)
-from assets.config import FILE_PICKER_DEFAULT_FOLDER, STYLESHEET
-
-logger = logging.getLogger(__name__)
+from component.toolsForPDF import *
+from assets.config import *
 
 
 class FileSelector(QDialog):
@@ -33,7 +25,7 @@ class FileSelector(QDialog):
         self.setObjectName("MainWindow")
         apply_stylesheet(self, STYLESHEET)
         self.setWindowTitle("File Selector")
-        self.setFixedSize(400, 220)
+        self.setFixedSize(FILE_PICKER_WIDTH, FILE_PICKER_HEIGHT)
         self.setAcceptDrops(True)
         self._init_ui()
 
@@ -119,10 +111,9 @@ class FileSelector(QDialog):
             except OSError as e:
                 errors.append(f"{os.path.basename(src_path)}: {str(e)}")
             except Exception as e:
-                logger.error(f"Failed to copy {src_path}: {e}")
+                print(f"Failed to copy {src_path}: {e}")
                 errors.append(f"{os.path.basename(src_path)}: Unexpected error")
         progress.setValue(len(files))
-
         if errors:
             QMessageBox.warning(
                 self, "Copy Errors", "Failed to copy:\n" + "\n".join(errors)

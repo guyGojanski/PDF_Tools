@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 from pypdf import PdfWriter, PdfReader
 from component.pdf_grid import PDFGrid
 from component.header_bar import HeaderBar
@@ -23,17 +24,17 @@ class PasswordInputDialog(QDialog):
     def __init__(self, filename, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Password Required")
-        self.setObjectName("PasswordDialog")
+        self.setObjectName("PasswordPromptDialog")
         self.setFixedSize(PASSWORD_DIALOG_WIDTH, PASSWORD_DIALOG_HEIGHT)
         self.password = None
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
         layout.setContentsMargins(30, 30, 30, 30)
         title = QLabel("File requires password")
-        title.setObjectName("DialogTitle")
+        title.setObjectName("DialogTitleLabel")
         layout.addWidget(title)
         file_label = QLabel(f"File: {filename}")
-        file_label.setObjectName("FileLabel")
+        file_label.setObjectName("FileNameLabel")
         file_label.setWordWrap(True)
         layout.addWidget(file_label)
         input_container = QHBoxLayout()
@@ -42,14 +43,15 @@ class PasswordInputDialog(QDialog):
         self.input_field.setPlaceholderText("Enter Password")
         self.input_field.setEchoMode(QLineEdit.EchoMode.Password)
         input_container.addWidget(self.input_field)
-        self.visibility_button = QPushButton("👁️")
-        self.visibility_button.setObjectName("EyeButton")
+        self.visibility_button = QPushButton()
+        self.visibility_button.setIcon(QIcon("assets/ico/hiddeneye.png"))
+        self.visibility_button.setObjectName("PasswordToggleButton")
         self.visibility_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.visibility_button.clicked.connect(self.toggle_visibility)
         input_container.addWidget(self.visibility_button)
         layout.addLayout(input_container)
         self.submit_button = QPushButton("Unlock & Add")
-        self.submit_button.setObjectName("SendButton")
+        self.submit_button.setObjectName("SubmitButton")
         self.submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.submit_button.clicked.connect(self.verify)
         layout.addWidget(self.submit_button)
@@ -57,16 +59,18 @@ class PasswordInputDialog(QDialog):
     def toggle_visibility(self):
         if self.input_field.echoMode() == QLineEdit.EchoMode.Password:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Normal)
-            self.visibility_button.setText("🔒")
+            self.visibility_button.setIcon(QIcon("assets/ico/eye.png"))
         else:
             self.input_field.setEchoMode(QLineEdit.EchoMode.Password)
-            self.visibility_button.setText("👁️")
+            self.visibility_button.setIcon(QIcon("assets/ico/hiddeneye.png"))
 
     def verify(self):
         pwd = self.input_field.text().strip()
-        if pwd:
-            self.password = pwd
-            self.accept()
+        if not pwd:
+            QMessageBox.warning(self, "Empty Password", "Please enter a password or close this dialog to skip.")
+            return
+        self.password = pwd
+        self.accept()
 
 
 class MergePreviewWindow(BaseToolWindow):
@@ -98,10 +102,10 @@ class MergePreviewWindow(BaseToolWindow):
         title_row = QHBoxLayout()
         title_row.setSpacing(10)
         self.title_label = QLabel()
-        self.title_label.setObjectName("MergeTitle")
+        self.title_label.setObjectName("ScreenTitleLabel")
         self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.add_btn = QPushButton("+")
-        self.add_btn.setObjectName("AddButton")
+        self.add_btn.setObjectName("AddFileButton")
         self.add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.add_btn.setFixedSize(ADD_BUTTON_SIZE, ADD_BUTTON_SIZE)
         self.add_btn.clicked.connect(self.on_add_clicked)
@@ -115,7 +119,7 @@ class MergePreviewWindow(BaseToolWindow):
         center_layout.addWidget(self.pdf_grid)
         content_layout.addWidget(center_container, stretch=1)
         self.sidebar = QWidget()
-        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setObjectName("ToolSidebar")
         self.sidebar.setFixedWidth(SIDEBAR_WIDTH)
         self.sidebar.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
@@ -125,17 +129,17 @@ class MergePreviewWindow(BaseToolWindow):
         sidebar_layout.setContentsMargins(22, 18, 22, 18)
         sidebar_layout.addWidget(QLabel("Merge PDF", objectName="SidebarTitle"))
         self.count_label = QLabel()
-        self.count_label.setObjectName("SidebarStatLabel")
+        self.count_label.setObjectName("SidebarStatText")
         sidebar_layout.addWidget(self.count_label)
         hint_label = QLabel(
             "Tip: Drag cards to reorder before merging. Use + to add more files."
         )
-        hint_label.setObjectName("SidebarHint")
+        hint_label.setObjectName("SidebarHintText")
         hint_label.setWordWrap(True)
         sidebar_layout.addWidget(hint_label)
         sidebar_layout.addStretch()
         self.merge_btn = QPushButton("Merge PDF Now")
-        self.merge_btn.setObjectName("MergeButton")
+        self.merge_btn.setObjectName("PrimaryActionButton")
         self.merge_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.merge_btn.setMinimumHeight(PRIMARY_BUTTON_HEIGHT)
         self.merge_btn.clicked.connect(self.perform_merge)

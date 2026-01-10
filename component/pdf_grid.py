@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QScrollArea
 from PyQt6.QtCore import Qt, pyqtSignal
 from component.file_card import FileCard
 from component.toolsForPDF import calculate_rotation
-
+from assets.config import *
 
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
@@ -30,11 +30,11 @@ class PDFGrid(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         self.scroll = QScrollArea()
-        self.scroll.setObjectName("MergeScrollArea")
+        self.scroll.setObjectName("WorkScrollArea")
         self.scroll.setWidgetResizable(True)
         self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         self.grid_container = QWidget()
-        self.grid_container.setObjectName("GridContainer")
+        self.grid_container.setObjectName("CardGrid")
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(20)
         self.grid_layout.setContentsMargins(20, 20, 20, 20)
@@ -96,18 +96,21 @@ class PDFGrid(QWidget):
 
     def update_rotation(self, item_data):
         if item_data in self.items:
-            item_data["rotation"] = calculate_rotation(item_data["rotation"])
-            card = self.active_cards.get(id(item_data))
-            if card:
-                card.update_content(item_data)
+            try:
+                item_data["rotation"] = calculate_rotation(item_data["rotation"])
+                card = self.active_cards.get(id(item_data))
+                if card:
+                    card.update_content(item_data)
+            except Exception as e:
+                print(f"Error updating rotation: {e}")
 
     def refresh_grid_visuals(self, full_reload=False):
         available_width = self.scroll.viewport().width()
         if available_width < 400:
-            available_width = 1000
-        available_width -= 40
-        card_total_width = 160 + 20
-        columns = max(1, available_width // card_total_width)
+            available_width = GRID_MIN_FALLBACK_WIDTH
+        available_width -= GRID_CONTAINER_PADDING
+        card_total_width = FILE_CARD_WIDTH + GRID_CARD_SPACING
+        columns = max(GRID_MIN_COLUMNS, available_width // card_total_width)
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
             widget = item.widget()

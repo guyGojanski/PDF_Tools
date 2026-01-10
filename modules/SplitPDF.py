@@ -103,7 +103,10 @@ class SplitPDFWindow(BaseToolWindow):
 
     @property
     def file_size_mb(self) -> float:
-        return os.path.getsize(self.file_path) / (1024 * 1024)
+        try:
+            return os.path.getsize(self.file_path) / (1024 * 1024)
+        except (OSError, FileNotFoundError):
+            return 0.0
 
     def _init_ui(self) -> None:
         main_layout = QVBoxLayout(self)

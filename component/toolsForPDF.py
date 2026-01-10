@@ -5,12 +5,12 @@ import platform
 import subprocess
 import logging
 from contextlib import contextmanager
-from typing import Optional, List, Tuple
+from typing import Optional, List
 import fitz
 from pypdf import PdfReader, PdfWriter
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton
+from PyQt6.QtWidgets import QFileDialog, QWidget, QPushButton, QLabel
 from assets.config import *
 
 
@@ -55,7 +55,7 @@ def is_valid_pdf(path: str) -> bool:
                 return False
             doc.close()
             return True
-        
+
         except Exception as e:
             logger.warning(f"Invalid PDF file: {path}")
             return False
@@ -116,8 +116,8 @@ def get_pdf_thumbnail(
     file_path: str,
     page_num: int = 0,
     rotation: int = 0,
-    width: int = 150,
-    height: int = 145,
+    width: int = THUMBNAIL_DEFAULT_WIDTH,
+    height: int = THUMBNAIL_DEFAULT_HEIGHT,
 ) -> Optional[QPixmap]:
     doc = None
     try:
@@ -145,6 +145,34 @@ def get_pdf_thumbnail(
             doc.close()
 
 
+def create_pdf_thumb_label(
+    file_path: str,
+    page_num: int = 0,
+    rotation: int = 0,
+    width: int = THUMBNAIL_DEFAULT_WIDTH,
+    height: int = THUMBNAIL_DEFAULT_HEIGHT,
+    object_name: str = "SplitPreviewThumb",
+    fallback_text: str = "assets/ico/filesize.png",
+) -> QLabel:
+    lbl = QLabel()
+    lbl.setObjectName(object_name)
+    lbl.setFixedSize(width, height)
+    lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    pix = get_pdf_thumbnail(
+        file_path, page_num=page_num, rotation=rotation, width=width, height=height
+    )
+    if pix:
+        lbl.setPixmap(pix)
+    else:
+        if page_num == 0:
+            fallback_pixmap = QPixmap(fallback_text)
+            if not fallback_pixmap.isNull():
+                lbl.setPixmap(fallback_pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        else:
+            lbl.setText(str(page_num + 1))
+    return lbl
+
+
 def apply_stylesheet(widget: QWidget, filename: str = STYLESHEET) -> None:
     possible_paths = [
         filename,
@@ -165,12 +193,12 @@ def apply_stylesheet(widget: QWidget, filename: str = STYLESHEET) -> None:
 def cleanup_temp_folder(folder: str):
     if not os.path.exists(folder):
         return
-    for _ in range(3):
+    for _ in range(CLEANUP_RETRY_ATTEMPTS):
         try:
             shutil.rmtree(folder)
             return
         except PermissionError:
-            time.sleep(0.3)
+            time.sleep(CLEANUP_RETRY_DELAY_SEC)
     shutil.rmtree(folder, ignore_errors=True)
 
 
@@ -181,7 +209,7 @@ def pick_pdf_files(parent: QWidget) -> List[str]:
     return files
 
 
-def truncate_filename(filename: str, limit: int = 20) -> str:
+def truncate_filename(filename: str, limit: int = FILENAME_TRUNCATE_LIMIT) -> str:
     if len(filename) > limit:
         return filename[: limit - 3] + "..."
     return filename
@@ -192,16 +220,7 @@ def safe_copy_file(src_path: str, target_folder: str) -> str:
         if not os.path.exists(target_folder):
             os.makedirs(target_folder)
         filename = os.path.basename(src_path)
-        dest_path = os.path.join(target_folder, filename)
-        base, ext = os.path.splitext(filename)
-        if os.path.exists(dest_path):
-            counter = 1
-            while True:
-                candidate = os.path.join(target_folder, f"{base}({counter}){ext}")
-                if not os.path.exists(candidate):
-                    dest_path = candidate
-                    break
-                counter += 1
+        dest_path = get_unique_filename(target_folder, filename)
         shutil.copy2(src_path, dest_path)
         return dest_path
     except PermissionError as e:
@@ -234,6 +253,18 @@ def get_unique_filename(folder: str, filename: str) -> str:
         counter += 1
 
 
+def get_pdf_page_count(path: str) -> int:
+    doc = None
+    try:
+        doc = fitz.open(path)
+        return len(doc)
+    except Exception:
+        return 0
+    finally:
+        if doc:
+            doc.close()
+
+
 class BaseToolWindow(QWidget):
     back_to_dashboard = pyqtSignal()
 
@@ -247,6 +278,10 @@ class BaseToolWindow(QWidget):
     def go_back(self) -> None:
         cleanup_temp_folder(self.temp_folder)
         self.back_to_dashboard.emit()
+    
+    def closeEvent(self, event) -> None:
+        cleanup_temp_folder(self.temp_folder)
+        super().closeEvent(event)
 
 
 def get_parity_indices(total_pages: int, parity: str) -> List[int]:
@@ -258,7 +293,6 @@ def get_parity_indices(total_pages: int, parity: str) -> List[int]:
 
 
 def parse_page_ranges(text: str, total_pages: int) -> List[int]:
-    """Parse page range string like '1-4,7,10-12' into list of 0-based page indices."""
     pages = set()
     if not text:
         return []
@@ -271,7 +305,14 @@ def parse_page_ranges(text: str, total_pages: int) -> List[int]:
             if "-" in part:
                 if part.endswith("-") or part.startswith("-"):
                     continue
-                start_str, end_str = part.split("-", 1)
+                while "--" in part:
+                    part = part.replace("--", "-")
+                hyphen_parts = part.split("-")
+                if len(hyphen_parts) != 2:
+                    continue
+                start_str, end_str = hyphen_parts
+                if not start_str or not end_str:
+                    continue
                 start, end = int(start_str), int(end_str)
                 if 1 <= start <= end <= total_pages:
                     pages.update(range(start - 1, end))
@@ -285,7 +326,6 @@ def parse_page_ranges(text: str, total_pages: int) -> List[int]:
 
 
 def format_pages_as_ranges(pages: List[int]) -> str:
-    """Format list of 1-based page numbers into range string like '1-4,7,10-12'."""
     if not pages:
         return ""
     sorted_pages = sorted(pages)
@@ -305,7 +345,6 @@ def format_pages_as_ranges(pages: List[int]) -> str:
 def write_pdf_with_rotation(
     writer, reader, page_indices: List[int], rotations: dict = None
 ) -> None:
-    """Add pages from reader to writer with optional rotation applied."""
     for idx in page_indices:
         if idx < len(reader.pages):
             page = reader.pages[idx]
@@ -321,7 +360,6 @@ def save_pdf_with_success(
     parent_widget=None,
     success_msg: str = "File saved successfully!",
 ) -> Optional[str]:
-    """Save PDF to Downloads with unique name and show success message."""
     from PyQt6.QtWidgets import QMessageBox
 
     try:
@@ -339,7 +377,6 @@ def save_pdf_with_success(
 
 
 def create_progress_dialog(parent, title: str, label: str, maximum: int):
-    """Create a standard progress dialog."""
     from PyQt6.QtWidgets import QProgressDialog
     from PyQt6.QtCore import Qt
 
@@ -350,3 +387,59 @@ def create_progress_dialog(parent, title: str, label: str, maximum: int):
     progress.setValue(0)
     progress.show()
     return progress
+
+
+def sanitize_page_input(text: str) -> str:
+    import re
+
+    return re.sub(r"[^0-9,\-]", "", text)
+
+
+def validate_page_input(text: str, total_pages: int) -> bool:
+    if not text:
+        return False
+    parts = [p.strip() for p in text.split(",") if p.strip()]
+    for part in parts:
+        if "-" in part:
+            if part.startswith("-") or part.endswith("-"):
+                return True
+            start_str, end_str = part.split("-", 1)
+            try:
+                start, end = int(start_str), int(end_str)
+            except ValueError:
+                return True
+            if start < 1 or end < 1 or start > end or end > total_pages:
+                return True
+        else:
+            try:
+                val = int(part)
+            except ValueError:
+                return True
+            if val < 1 or val > total_pages:
+                return True
+    return False
+
+
+def prune_page_input(text: str, total_pages: int) -> str:
+    import re
+
+    cleaned_text = re.sub(r"[^0-9,\-]", "", text)
+    valid_zero_based = parse_page_ranges(cleaned_text, total_pages)
+    valid_one_based = [p + 1 for p in valid_zero_based]
+    return format_pages_as_ranges(valid_one_based)
+
+
+def get_pdf_basename_without_ext(file_path: str) -> str:
+    return os.path.splitext(os.path.basename(file_path))[0]
+
+
+def get_pdf_filename(file_path: str) -> str:
+    return os.path.basename(file_path)
+
+
+def write_pdf_pages(
+    reader: PdfReader, writer: PdfWriter, page_indices: List[int]
+) -> None:
+    for idx in page_indices:
+        if idx < len(reader.pages):
+            writer.add_page(reader.pages[idx])

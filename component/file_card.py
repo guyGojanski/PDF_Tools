@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel, QPushButton
 from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
-from PyQt6.QtGui import QDrag, QPixmap
+from PyQt6.QtGui import QDrag, QPixmap, QIcon
 from component.toolsForPDF import (
     get_pdf_thumbnail,
     calculate_rotation,
@@ -23,10 +23,10 @@ class FileCard(QFrame):
         self.page_num = item_data.get("page", 0)
         self.is_encrypted = item_data.get("encrypted", False)
         self.click_to_toggle = click_to_toggle
-        self.setObjectName("FileCardFrame")
+        self.setObjectName("FileCard")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.number_label = QLabel(str(index), self)
-        self.number_label.setObjectName("NumberLabel")
+        self.number_label.setObjectName("FileNumberBadge")
         self.number_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.number_label.setFixedSize(CARD_NUMBER_LABEL_SIZE, CARD_NUMBER_LABEL_SIZE)
         self.number_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
@@ -36,7 +36,7 @@ class FileCard(QFrame):
         self.layout.setSpacing(2)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label = QLabel()
-        self.image_label.setObjectName("CardImage")
+        self.image_label.setObjectName("FilePreviewImage")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.image_label.setScaledContents(False)
@@ -44,19 +44,19 @@ class FileCard(QFrame):
         file_name = os.path.basename(self.file_path)
         display_name = truncate_filename(file_name)
         self.name_label = QLabel(display_name)
-        self.name_label.setObjectName("CardName")
+        self.name_label.setObjectName("FileNameLabel")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.name_label.setWordWrap(True)
         self.name_label.setFixedHeight(CARD_NAME_LABEL_HEIGHT)
         self.name_label.setToolTip(file_name)
         self.layout.addWidget(self.name_label)
         self.overlay_label = QLabel("", self)
-        self.overlay_label.setObjectName("CardOverlay")
+        self.overlay_label.setObjectName("FileOverlay")
         self.overlay_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.overlay_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.overlay_label.hide()
         self.delete_button = QPushButton("X", self)
-        self.delete_button.setObjectName("DeleteButton")
+        self.delete_button.setObjectName("DeleteCardButton")
         self.delete_button.setFixedSize(
             CARD_ACTION_BUTTON_SIZE, CARD_ACTION_BUTTON_SIZE
         )
@@ -64,7 +64,7 @@ class FileCard(QFrame):
         self.delete_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.delete_button.clicked.connect(self.on_delete_clicked)
         self.rotate_button = QPushButton("⟲", self)
-        self.rotate_button.setObjectName("RotateButton")
+        self.rotate_button.setObjectName("RotateCardButton")
         self.rotate_button.setFixedSize(
             CARD_ACTION_BUTTON_SIZE, CARD_ACTION_BUTTON_SIZE
         )
@@ -84,8 +84,10 @@ class FileCard(QFrame):
 
     def update_visuals(self):
         if self.is_encrypted:
-            self.image_label.setText("🔒")
-            self.image_label.setObjectName("EncryptedIcon")
+            lock_pixmap = QPixmap("assets/ico/lock.png")
+            if not lock_pixmap.isNull():
+                self.image_label.setPixmap(lock_pixmap.scaled(60, 60, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            self.image_label.setObjectName("EncryptedIconLabel")
             self.setToolTip("Password required")
             self.rotate_button.setEnabled(False)
         else:
@@ -101,7 +103,9 @@ class FileCard(QFrame):
         if pixmap:
             self.image_label.setPixmap(pixmap)
         else:
-            self.image_label.setText("📄")
+            fallback_pixmap = QPixmap("assets/ico/filesize.png")
+            if not fallback_pixmap.isNull():
+                self.image_label.setPixmap(fallback_pixmap.scaled(60, 60, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
 
     def mousePressEvent(self, event):
         if self.click_to_toggle:

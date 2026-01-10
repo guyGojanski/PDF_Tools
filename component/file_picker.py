@@ -22,7 +22,7 @@ class FileSelector(QDialog):
         self.max_files = max_files
         self.target_folder = target_folder
         self.selected_files: List[str] = []
-        self.setObjectName("MainWindow")
+        self.setObjectName("FilePickerWindow")
         apply_stylesheet(self, STYLESHEET)
         self.setWindowTitle("File Selector")
         self.setFixedSize(FILE_PICKER_WIDTH, FILE_PICKER_HEIGHT)
@@ -30,20 +30,19 @@ class FileSelector(QDialog):
         self._init_ui()
         self.show()
 
-
     def _init_ui(self) -> None:
         layout = QVBoxLayout(self)
         self.label = QLabel(f"Drag up to {self.max_files} files here\n(Local Copy)")
-        self.label.setObjectName("InstructionLabel")
+        self.label.setObjectName("InstructionText")
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
         self.button = QPushButton("Select Files")
-        self.button.setObjectName("SelectButton")
+        self.button.setObjectName("BrowseFilesButton")
         self.button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.button.clicked.connect(self.open_files)
         layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
         self.overlay = QLabel("Drop Here!", self)
-        self.overlay.setObjectName("Overlay")
+        self.overlay.setObjectName("DropOverlay")
         self.overlay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.overlay.resize(self.size())
         self.overlay.hide()
@@ -127,7 +126,11 @@ class FileSelector(QDialog):
                 msg += f"\n...and {len(skipped_files) - 10} more."
             QMessageBox.warning(self, "Invalid Files Skipped", msg)
         self.selected_files = copied_paths
-        self.accept()
+        if copied_paths:
+            self.accept()
+        else:
+            cleanup_temp_folder(self.target_folder)
+            self.reject()
 
 
 def get_files(
@@ -137,5 +140,7 @@ def get_files(
     if not app:
         app = QApplication(sys.argv)
     window = FileSelector(max_files, target_folder)
-    window.exec()
+    result = window.exec()
+    if result != QDialog.DialogCode.Accepted:
+        cleanup_temp_folder(target_folder)
     return window.selected_files

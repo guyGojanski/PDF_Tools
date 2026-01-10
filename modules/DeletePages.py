@@ -1,6 +1,4 @@
 import os
-import fitz
-import re
 from PyQt6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
@@ -12,7 +10,7 @@ from PyQt6.QtWidgets import (
     QWidget,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from pypdf import PdfWriter, PdfReader
 from component.pdf_grid import PDFGrid
 from component.header_bar import HeaderBar
@@ -22,17 +20,17 @@ from assets.config import *
 
 class DeletePagesWindow(BaseToolWindow):
     def __init__(self, file_path, temp_folder):
-        doc = fitz.open(file_path)
-        total_pages = len(doc)
-        doc.close()
         super().__init__(temp_folder, f"Editing: {os.path.basename(file_path)}")
         self.file_path = file_path
-        self.total_pages = total_pages
+        self.total_pages = get_pdf_page_count(file_path)
         self.pages_data = [
             {"path": file_path, "page": i, "rotation": 0, "marked": False}
             for i in range(self.total_pages)
         ]
         self._suppress_text_update = False
+        self._invalid_input_timer = QTimer(self)
+        self._invalid_input_timer.setSingleShot(True)
+        self._invalid_input_timer.timeout.connect(self._prune_invalid_pages)
         self._init_ui()
 
     def _init_ui(self):
@@ -59,7 +57,7 @@ class DeletePagesWindow(BaseToolWindow):
         center_layout.addWidget(self.pdf_grid)
         content_layout.addWidget(center_container, stretch=1)
         self.sidebar = QWidget()
-        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setObjectName("ToolSidebar")
         self.sidebar.setFixedWidth(SIDEBAR_WIDTH)
         self.sidebar.setSizePolicy(
             QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
@@ -69,14 +67,14 @@ class DeletePagesWindow(BaseToolWindow):
         sidebar_layout.setContentsMargins(22, 18, 22, 18)
         sidebar_layout.addWidget(QLabel("Delete Pages", objectName="SidebarTitle"))
         self.total_pages_label = QLabel(f"Total pages: {self.total_pages}")
-        self.total_pages_label.setObjectName("SidebarStatLabel")
+        self.total_pages_label.setObjectName("SidebarStatText")
         sidebar_layout.addWidget(self.total_pages_label)
         self.pages_to_remove_label = QLabel("Select pages to remove:")
-        self.pages_to_remove_label.setObjectName("RemoveLabel")
+        self.pages_to_remove_label.setObjectName("RemovePromptLabel")
         self.pages_to_remove_label.setWordWrap(True)
         sidebar_layout.addWidget(self.pages_to_remove_label)
         self.pages_input = QLineEdit()
-        self.pages_input.setObjectName("PagesInput")
+        self.pages_input.setObjectName("PagesInputField")
         self.pages_input.setPlaceholderText("e.g. 1-4, 7")
         self.pages_input.setMinimumHeight(PAGES_INPUT_HEIGHT)
         self.pages_input.textChanged.connect(self.clean_and_update)
@@ -84,7 +82,7 @@ class DeletePagesWindow(BaseToolWindow):
         parity_row = QHBoxLayout()
         parity_row.setSpacing(10)
         self.btn_odd = QPushButton("Odd")
-        self.btn_odd.setObjectName("ParityButton")
+        self.btn_odd.setObjectName("ParityToggleButton")
         self.btn_odd.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_odd.setToolTip("Select all Odd pages (1, 3, 5...)")
         self.btn_odd.setMinimumHeight(PARITY_BUTTON_HEIGHT)
@@ -92,7 +90,7 @@ class DeletePagesWindow(BaseToolWindow):
         self.btn_odd.clicked.connect(lambda: self.toggle_parity("odd"))
         parity_row.addWidget(self.btn_odd)
         self.btn_even = QPushButton("Even")
-        self.btn_even.setObjectName("ParityButton")
+        self.btn_even.setObjectName("ParityToggleButton")
         self.btn_even.setCursor(Qt.CursorShape.PointingHandCursor)
         self.btn_even.setToolTip("Select all Even pages (2, 4, 6...)")
         self.btn_even.setMinimumHeight(PARITY_BUTTON_HEIGHT)
@@ -102,12 +100,12 @@ class DeletePagesWindow(BaseToolWindow):
         parity_row.addStretch()
         sidebar_layout.addLayout(parity_row)
         hint_label = QLabel("Tip: Click cards to mark them, or type ranges like 1-4,7")
-        hint_label.setObjectName("SidebarHint")
+        hint_label.setObjectName("SidebarHintText")
         hint_label.setWordWrap(True)
         sidebar_layout.addWidget(hint_label)
         sidebar_layout.addStretch()
         self.save_btn = QPushButton("Save Changes (Remove Marked Pages)")
-        self.save_btn.setObjectName("MergeButton")
+        self.save_btn.setObjectName("PrimaryActionButton")
         self.save_btn.setMinimumHeight(PRIMARY_BUTTON_HEIGHT)
         self.save_btn.clicked.connect(self.perform_save)
         sidebar_layout.addWidget(self.save_btn)
@@ -135,12 +133,28 @@ class DeletePagesWindow(BaseToolWindow):
         if self._suppress_text_update:
             return
         text = self.pages_input.text()
-        cleaned_text = re.sub(r"[^0-9,\-]", "", text)
+        cleaned_text = sanitize_page_input(text)
         if text != cleaned_text:
             pos = self.pages_input.cursorPosition()
             self.pages_input.setText(cleaned_text)
             self.pages_input.setCursorPosition(max(0, pos - 1))
+        has_invalid = validate_page_input(cleaned_text, self.total_pages)
+        if has_invalid:
+            self._invalid_input_timer.start(INPUT_VALIDATION_DELAY_MS)
+        else:
+            self._invalid_input_timer.stop()
         self.live_update_marks(cleaned_text.replace(" ", ""))
+
+    def _prune_invalid_pages(self):
+        if self._suppress_text_update:
+            return
+        new_text = prune_page_input(self.pages_input.text(), self.total_pages)
+        self._suppress_text_update = True
+        self.pages_input.setText(new_text)
+        self._suppress_text_update = False
+        self.live_update_marks(new_text.replace(" ", ""))
+        if not validate_page_input(new_text, self.total_pages):
+            self._invalid_input_timer.stop()
 
     def live_update_marks(self, text):
         if self._suppress_text_update:

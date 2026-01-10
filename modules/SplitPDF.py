@@ -204,12 +204,12 @@ class SplitPDFWindow(BaseToolWindow):
         layout.setContentsMargins(0, 5, 0, 0)
 
         layout.addLayout(self._create_range_toggle())
-        
+
         self.range_tabs = QStackedWidget()
         self.range_tabs.addWidget(self._create_custom_range_tab())
         self.range_tabs.addWidget(self._create_fixed_range_tab())
         layout.addWidget(self.range_tabs)
-        
+
         return widget
 
     def _create_range_toggle(self) -> QHBoxLayout:
@@ -244,13 +244,15 @@ class SplitPDFWindow(BaseToolWindow):
         custom_layout = QVBoxLayout(custom_widget)
         custom_layout.setContentsMargins(0, 5, 0, 0)
         custom_layout.setSpacing(10)
-        
+
         self.range_scroll = QScrollArea()
         self.range_scroll.setWidgetResizable(True)
         self.range_scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.range_scroll.setObjectName("SidebarScrollArea")
         self.range_scroll.setMinimumHeight(0)
-        self.range_scroll.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.range_scroll.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
 
         self.range_scroll_content = QWidget()
         self.range_scroll_content.setObjectName("SidebarScrollContent")
@@ -265,7 +267,7 @@ class SplitPDFWindow(BaseToolWindow):
 
         self.range_scroll.setWidget(self.range_scroll_content)
         custom_layout.addWidget(self.range_scroll)
-        
+
         add_btn = QPushButton("+ Add Range")
         add_btn.setObjectName("AddRangeButton")
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -276,27 +278,30 @@ class SplitPDFWindow(BaseToolWindow):
         custom_layout.addWidget(add_btn)
         custom_layout.addWidget(self.merge_ranges_chk)
         custom_layout.addStretch()
-        
+
         return custom_widget
 
     def _create_fixed_range_tab(self) -> QWidget:
         fixed_widget = QWidget()
         fixed_layout = QVBoxLayout(fixed_widget)
         fixed_layout.setSpacing(10)
-        
+
         fixed_layout.addWidget(QLabel("Split into files of X pages:"))
-        
+
         self.fixed_spin = QSpinBox()
         self.fixed_spin.setRange(1, max(1, self.total_pages))
         self.fixed_spin.setValue(1)
         self.fixed_spin.valueChanged.connect(self.update_preview)
         fixed_layout.addWidget(self.fixed_spin)
         fixed_layout.addStretch()
-        
+
         return fixed_widget
 
     def _adjust_scroll_height(self):
-        if not hasattr(self, "range_scroll_content") or not self.range_scroll_content.layout():
+        if (
+            not hasattr(self, "range_scroll_content")
+            or not self.range_scroll_content.layout()
+        ):
             return
         QTimer.singleShot(0, lambda: self._set_scroll_height())
 
@@ -327,9 +332,7 @@ class SplitPDFWindow(BaseToolWindow):
                 item.widget().setParent(None)
 
         for idx, (start, end) in enumerate(self.ranges_to_split):
-            widget = RangeGroupWidget(
-                self.file_path, start, end, idx + 1
-            )
+            widget = RangeGroupWidget(self.file_path, start, end, idx + 1)
             row = idx // cols
             col = idx % cols
             self.grid_layout.addWidget(widget, row, col)
@@ -628,7 +631,9 @@ class SplitPDFWindow(BaseToolWindow):
                     writer = PdfWriter()
                     for start, end in self.ranges_to_split:
                         write_pdf_pages(reader, writer, list(range(start, end + 1)))
-                    out_path = get_unique_filename(save_dir, f"{base_name}_merged_split.pdf")
+                    out_path = get_unique_filename(
+                        save_dir, f"{base_name}_merged_split.pdf"
+                    )
                     with open(out_path, "wb") as f:
                         writer.write(f)
                     created_files.append(out_path)
@@ -636,12 +641,18 @@ class SplitPDFWindow(BaseToolWindow):
                     for idx, (start, end) in enumerate(self.ranges_to_split):
                         writer = PdfWriter()
                         write_pdf_pages(reader, writer, list(range(start, end + 1)))
-                        out_path = get_unique_filename(save_dir, f"{base_name}_part_{idx + 1}.pdf")
+                        out_path = get_unique_filename(
+                            save_dir, f"{base_name}_part_{idx + 1}.pdf"
+                        )
                         with open(out_path, "wb") as f:
                             writer.write(f)
                         created_files.append(out_path)
-                        
-                QMessageBox.information(self, "Success", f"Created {len(created_files)} files in Downloads folder.")
+
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Created {len(created_files)} files in Downloads folder.",
+                )
                 self.go_back()
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
@@ -650,15 +661,19 @@ class SplitPDFWindow(BaseToolWindow):
         target_mb = self.size_spin.value()
         if self.unit_combo.currentText() == "KB":
             target_mb /= 1024
-        
+
         if target_mb < SPLIT_SIZE_MIN_KB / 1024:
-            QMessageBox.warning(self, "Invalid Size", f"Minimum split size is {SPLIT_SIZE_MIN_KB} KB.")
+            QMessageBox.warning(
+                self, "Invalid Size", f"Minimum split size is {SPLIT_SIZE_MIN_KB} KB."
+            )
             return
-        
+
         if target_mb > SPLIT_SIZE_MAX_MB:
-            QMessageBox.warning(self, "Invalid Size", f"Maximum split size is {SPLIT_SIZE_MAX_MB} MB.")
+            QMessageBox.warning(
+                self, "Invalid Size", f"Maximum split size is {SPLIT_SIZE_MAX_MB} MB."
+            )
             return
-        
+
         limit_bytes = target_mb * 1024 * 1024 * SPLIT_SIZE_SAFETY_MARGIN
         with button_operation(self.split_btn, "Calculating...", "Split PDF"):
             QApplication.processEvents()
@@ -671,7 +686,7 @@ class SplitPDFWindow(BaseToolWindow):
                 file_index = 1
                 created_files: List[str] = []
                 max_output_files = MAX_SPLIT_OUTPUT_FILES
-                
+
                 for page in reader.pages:
                     current_writer.add_page(page)
                     current_page_count += 1
@@ -683,7 +698,7 @@ class SplitPDFWindow(BaseToolWindow):
                             QMessageBox.warning(
                                 self,
                                 "Too Many Files",
-                                f"Split would create more than {max_output_files} files. Increase the split size."
+                                f"Split would create more than {max_output_files} files. Increase the split size.",
                             )
                             return
                         save_writer = PdfWriter()

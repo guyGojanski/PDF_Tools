@@ -86,7 +86,14 @@ class FileCard(QFrame):
         if self.is_encrypted:
             lock_pixmap = QPixmap("assets/ico/lock.png")
             if not lock_pixmap.isNull():
-                self.image_label.setPixmap(lock_pixmap.scaled(60, 60, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                self.image_label.setPixmap(
+                    lock_pixmap.scaled(
+                        60,
+                        60,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
             self.image_label.setObjectName("EncryptedIconLabel")
             self.setToolTip("Password required")
             self.rotate_button.setEnabled(False)
@@ -105,7 +112,14 @@ class FileCard(QFrame):
         else:
             fallback_pixmap = QPixmap("assets/ico/filesize.png")
             if not fallback_pixmap.isNull():
-                self.image_label.setPixmap(fallback_pixmap.scaled(60, 60, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                self.image_label.setPixmap(
+                    fallback_pixmap.scaled(
+                        60,
+                        60,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
 
     def mousePressEvent(self, event):
         if self.click_to_toggle:

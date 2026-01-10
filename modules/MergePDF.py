@@ -67,7 +67,11 @@ class PasswordInputDialog(QDialog):
     def verify(self):
         pwd = self.input_field.text().strip()
         if not pwd:
-            QMessageBox.warning(self, "Empty Password", "Please enter a password or close this dialog to skip.")
+            QMessageBox.warning(
+                self,
+                "Empty Password",
+                "Please enter a password or close this dialog to skip.",
+            )
             return
         self.password = pwd
         self.accept()

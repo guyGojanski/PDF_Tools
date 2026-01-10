@@ -167,7 +167,14 @@ def create_pdf_thumb_label(
         if page_num == 0:
             fallback_pixmap = QPixmap(fallback_text)
             if not fallback_pixmap.isNull():
-                lbl.setPixmap(fallback_pixmap.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+                lbl.setPixmap(
+                    fallback_pixmap.scaled(
+                        width,
+                        height,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
         else:
             lbl.setText(str(page_num + 1))
     return lbl
@@ -278,7 +285,7 @@ class BaseToolWindow(QWidget):
     def go_back(self) -> None:
         cleanup_temp_folder(self.temp_folder)
         self.back_to_dashboard.emit()
-    
+
     def closeEvent(self, event) -> None:
         cleanup_temp_folder(self.temp_folder)
         super().closeEvent(event)

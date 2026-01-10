@@ -175,12 +175,12 @@ class MainWindow(QMainWindow):
         self.resize(MAIN_WINDOW_START_WIDTH, MAIN_WINDOW_START_HEIGHT)
         self.setMinimumSize(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MIN_HEIGHT)
         apply_stylesheet(self, STYLESHEET)
-        
+
         cleanup_temp_folder(MERGE_TEMP_FOLDER)
         cleanup_temp_folder(DELETE_TEMP_FOLDER)
         cleanup_temp_folder(SPLIT_TEMP_FOLDER)
         cleanup_temp_folder(FILE_PICKER_DEFAULT_FOLDER)
-        
+
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
         self.dashboard = DashboardWidget(self)
@@ -227,7 +227,7 @@ class MainWindow(QMainWindow):
         if current_widget != self.dashboard:
             self.stack.removeWidget(current_widget)
             current_widget.deleteLater()
-    
+
     def closeEvent(self, event):
         cleanup_temp_folder(MERGE_TEMP_FOLDER)
         cleanup_temp_folder(DELETE_TEMP_FOLDER)

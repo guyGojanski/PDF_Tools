@@ -4,6 +4,7 @@ from component.file_card import FileCard
 from component.toolsForPDF import calculate_rotation
 from assets.config import *
 
+
 class PDFGrid(QWidget):
     items_changed = pyqtSignal()
 

@@ -24,7 +24,7 @@ from assets.config import *
 class ToolCard(QFrame):
     def __init__(self, name, description, icon_path, tool_type, main_window):
         super().__init__()
-        self.setObjectName("ToolCard")
+        self.setObjectName("ToolCardFrame")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setMinimumWidth(300)
         self.setMaximumWidth(450)
@@ -35,7 +35,7 @@ class ToolCard(QFrame):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.setSpacing(12)
         self.icon_label = QLabel()
-        self.icon_label.setObjectName("ToolIcon")
+        self.icon_label.setObjectName("ToolCardIcon")
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if icon_path and icon_path.endswith(".png"):
             pixmap = QPixmap(icon_path)
@@ -49,14 +49,14 @@ class ToolCard(QFrame):
         else:
             self.icon_label.setText(icon_path if icon_path else "")
         self.name_label = QLabel(name)
-        self.name_label.setObjectName("ToolName")
+        self.name_label.setObjectName("ToolCardTitle")
         self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.desc_label = QLabel(description)
-        self.desc_label.setObjectName("ToolDesc")
+        self.desc_label.setObjectName("ToolCardSubtitle")
         self.desc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.desc_label.setWordWrap(True)
         self.launch_button = QPushButton("Start Working")
-        self.launch_button.setObjectName("LaunchButton")
+        self.launch_button.setObjectName("ToolCardActionButton")
         self.launch_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.launch_button.clicked.connect(self.launch_tool)
         if not tool_type:
@@ -98,15 +98,15 @@ class DashboardWidget(QWidget):
         self.content_layout.setContentsMargins(40, 30, 40, 40)
         self.content_layout.setSpacing(10)
         title = QLabel("PDF Solutions")
-        title.setObjectName("DashboardTitle")
+        title.setObjectName("DashboardHeading")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         subtitle = QLabel("Choose the professional tool you need right now")
-        subtitle.setObjectName("DashboardSubtitle")
+        subtitle.setObjectName("DashboardSubheading")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.content_layout.addWidget(title)
         self.content_layout.addWidget(subtitle)
         self.grid_container = QWidget()
-        self.grid_container.setObjectName("GridContainer")
+        self.grid_container.setObjectName("CardGrid")
         self.grid_layout = QGridLayout(self.grid_container)
         self.grid_layout.setSpacing(25)
         self.grid_layout.setContentsMargins(0, 20, 0, 0)
@@ -135,7 +135,7 @@ class DashboardWidget(QWidget):
             (
                 "Compress PDF",
                 "Reduce the file size of your PDF without losing quality.",
-                "悼",  # כאן השארתי את הישן כי לא הבאת לו תמונה, אם יש לך תעדכן
+                "悼",
                 None,
             ),
         ]
@@ -175,6 +175,12 @@ class MainWindow(QMainWindow):
         self.resize(MAIN_WINDOW_START_WIDTH, MAIN_WINDOW_START_HEIGHT)
         self.setMinimumSize(MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MIN_HEIGHT)
         apply_stylesheet(self, STYLESHEET)
+        
+        cleanup_temp_folder(MERGE_TEMP_FOLDER)
+        cleanup_temp_folder(DELETE_TEMP_FOLDER)
+        cleanup_temp_folder(SPLIT_TEMP_FOLDER)
+        cleanup_temp_folder(FILE_PICKER_DEFAULT_FOLDER)
+        
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
         self.dashboard = DashboardWidget(self)
@@ -221,6 +227,13 @@ class MainWindow(QMainWindow):
         if current_widget != self.dashboard:
             self.stack.removeWidget(current_widget)
             current_widget.deleteLater()
+    
+    def closeEvent(self, event):
+        cleanup_temp_folder(MERGE_TEMP_FOLDER)
+        cleanup_temp_folder(DELETE_TEMP_FOLDER)
+        cleanup_temp_folder(SPLIT_TEMP_FOLDER)
+        cleanup_temp_folder(FILE_PICKER_DEFAULT_FOLDER)
+        super().closeEvent(event)
 
 
 def main():
